@@ -132,7 +132,10 @@ CREATE TABLE `Transaccion` (
     `id_acuerdo` INTEGER NOT NULL,
     `tipo_pago` ENUM('dinero', 'trueque') NOT NULL,
     `detalle` VARCHAR(255) NULL,
-    `estado` ENUM('pendiente', 'completado') NOT NULL DEFAULT 'pendiente',
+    `estado` ENUM('pendiente', 'pagado_empleador', 'intercambio_empleador', 'intercambio_trabajador', 'completado') NOT NULL DEFAULT 'pendiente',
+    `confirmado_empleador` BOOLEAN NOT NULL DEFAULT false,
+    `confirmado_trabajador` BOOLEAN NOT NULL DEFAULT false,
+    `evidencia_url` VARCHAR(500) NULL,
     `fecha` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `Transaccion_id_acuerdo_key`(`id_acuerdo`),
