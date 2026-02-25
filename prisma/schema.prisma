@@ -1,0 +1,302 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum EstadoUsuario {
+  activo
+  suspendido
+}
+
+enum TipoPago {
+  dinero
+  trueque
+}
+
+enum EstadoTrabajo {
+  publicado
+  en_proceso
+  completado
+  cancelado
+}
+
+enum EstadoPostulacion {
+  pendiente
+  aceptada
+  rechazada
+}
+
+enum EstadoReporte {
+  pendiente
+  resuelto
+}
+
+enum EstadoTransaccion {
+  pendiente
+  pagado_empleador // Dinero: empleador marcó como pagado, espera confirmación del trabajador
+  intercambio_empleador // Trueque: empleador confirmó entrega, espera al trabajador
+  intercambio_trabajador // Trueque: trabajador confirmó, espera al empleador
+  completado
+}
+
+// =========================
+// MODELOS
+// =========================
+
+model Usuario {
+  id_usuario         Int           @id @default(autoincrement())
+  nombre             String        @db.VarChar(100)
+  apellido           String        @db.VarChar(100)
+  correo             String        @unique @db.VarChar(150)
+  password_hash      String        @db.VarChar(255)
+  telefono           String?       @db.VarChar(20)
+  foto_perfil        String?       @db.VarChar(255)
+  fecha_registro     DateTime      @default(now())
+  estado             EstadoUsuario @default(activo)
+  foto_cedula        String?       @db.VarChar(255) // URL o path de la foto de la cédula
+  foto_rostro        String?       @db.VarChar(255) // URL de la selfie verificada
+  verificado         Boolean       @default(false) // Estado de la verificación de identidad
+  fecha_verificacion DateTime?
+
+  // Roles
+  rolesAsignados UsuarioEnRol[]
+
+  // Relaciones funcionales
+  trabajos       Trabajo[]      @relation("UsuarioEmpleador")
+  postulaciones  Postulacion[]
+  acuerdos       Acuerdo[]      @relation("AcuerdoTrabajador")
+  historial      Historial[]
+  notificaciones Notificacion[]
+
+  // Calificaciones
+  calificacionesEnviadas  Calificacion[] @relation("CalificaEmisor")
+  calificacionesRecibidas Calificacion[] @relation("CalificaReceptor")
+
+  // Reportes
+  reportesEnviados  Reporte[] @relation("ReporteEmisor")
+  reportesRecibidos Reporte[] @relation("ReporteReceptor")
+
+  // Habilidades
+  habilidades Habilidad[]
+}
+
+// =========================
+// ROLES
+// =========================
+
+model Rol {
+  id_rol      Int     @id @default(autoincrement())
+  nombre      String  @unique @db.VarChar(50)
+  descripcion String? @db.VarChar(255)
+
+  usuarios UsuarioEnRol[]
+}
+
+model UsuarioEnRol {
+  id_usuario_en_rol Int      @id @default(autoincrement())
+  id_usuario        Int
+  id_rol            Int
+  fecha_asignacion  DateTime @default(now())
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id_usuario])
+  rol     Rol     @relation(fields: [id_rol], references: [id_rol])
+
+  @@unique([id_usuario, id_rol])
+}
+
+// =========================
+// CATEGORÍA
+// =========================
+
+model Categoria {
+  id_categoria Int     @id @default(autoincrement())
+  nombre       String  @db.VarChar(100)
+  descripcion  String? @db.VarChar(255)
+
+  trabajos      Trabajo[]
+  especialistas Habilidad[]
+}
+
+model Habilidad {
+  id_habilidad Int      @id @default(autoincrement())
+  id_usuario   Int
+  id_categoria Int
+  descripcion  String?  @db.Text
+  tarifa_hora  Decimal?
+
+  usuario   Usuario   @relation(fields: [id_usuario], references: [id_usuario])
+  categoria Categoria @relation(fields: [id_categoria], references: [id_categoria])
+
+  @@unique([id_usuario, id_categoria])
+}
+
+// =========================
+// TRABAJO
+// =========================
+
+model Trabajo {
+  id_trabajo          Int           @id @default(autoincrement())
+  id_empleador        Int
+  id_categoria        Int
+  titulo              String        @db.VarChar(150)
+  descripcion         String        @db.Text
+  tipo_pago           TipoPago
+  monto_pago          Decimal?
+  descripcion_trueque String?       @db.VarChar(255)
+  ubicacion           String        @db.VarChar(150)
+  latitud             Float?
+  longitud            Float?
+  fecha_estimada      DateTime?
+  foto                String?       @db.VarChar(255) // URL o path de la foto del trabajo
+  estado              EstadoTrabajo @default(publicado)
+  fecha_creacion      DateTime      @default(now())
+
+  // Relaciones
+  empleador      Usuario        @relation("UsuarioEmpleador", fields: [id_empleador], references: [id_usuario])
+  categoria      Categoria      @relation(fields: [id_categoria], references: [id_categoria])
+  postulaciones  Postulacion[]
+  acuerdos       Acuerdo[]
+  calificaciones Calificacion[]
+  historial      Historial[]
+  reportes       Reporte[]
+}
+
+// =========================
+// POSTULACIÓN
+// =========================
+
+model Postulacion {
+  id_postulacion    Int               @id @default(autoincrement())
+  id_trabajo        Int
+  id_trabajador     Int
+  id_acuerdo        Int?              @unique
+  mensaje           String?           @db.Text
+  estado            EstadoPostulacion @default(pendiente)
+  fecha_postulacion DateTime          @default(now())
+
+  trabajo    Trabajo  @relation(fields: [id_trabajo], references: [id_trabajo])
+  trabajador Usuario  @relation(fields: [id_trabajador], references: [id_usuario])
+  acuerdo    Acuerdo? @relation(fields: [id_acuerdo], references: [id_acuerdo])
+}
+
+// =========================
+// ACUERDO
+// =========================
+
+model Acuerdo {
+  id_acuerdo    Int      @id @default(autoincrement())
+  id_trabajo    Int
+  id_trabajador Int
+  tipo_pago     TipoPago
+
+  valor_acordado      Decimal?
+  detalle_trueque     String?  @db.Text
+  detalles            String?  @db.Text
+  tiempo_estimado     String?  @db.VarChar(50)
+  condiciones         String?  @db.Text
+  aceptado_empleador  Boolean  @default(false)
+  aceptado_trabajador Boolean  @default(false)
+  fecha_creacion      DateTime @default(now())
+
+  trabajo     Trabajo      @relation(fields: [id_trabajo], references: [id_trabajo])
+  trabajador  Usuario      @relation("AcuerdoTrabajador", fields: [id_trabajador], references: [id_usuario])
+  transaccion Transaccion?
+  postulacion Postulacion?
+}
+
+// =========================
+// CALIFICACIÓN
+// =========================
+
+model Calificacion {
+  id_calificacion     Int      @id @default(autoincrement())
+  id_trabajo          Int
+  id_usuario_emisor   Int
+  id_usuario_receptor Int
+  puntuacion          Int      @db.UnsignedSmallInt
+  comentario          String?  @db.Text
+  fecha               DateTime @default(now())
+
+  trabajo  Trabajo @relation(fields: [id_trabajo], references: [id_trabajo])
+  emisor   Usuario @relation("CalificaEmisor", fields: [id_usuario_emisor], references: [id_usuario])
+  receptor Usuario @relation("CalificaReceptor", fields: [id_usuario_receptor], references: [id_usuario])
+}
+
+// =========================
+// TRANSACCIÓN
+// =========================
+
+model Transaccion {
+  id_transaccion        Int               @id @default(autoincrement())
+  id_acuerdo            Int               @unique
+  tipo_pago             TipoPago
+  detalle               String?           @db.VarChar(255)
+  estado                EstadoTransaccion @default(pendiente)
+  confirmado_empleador  Boolean           @default(false)
+  confirmado_trabajador Boolean           @default(false)
+  evidencia_url         String?           @db.VarChar(500)
+  fecha                 DateTime          @default(now())
+
+  acuerdo Acuerdo @relation(fields: [id_acuerdo], references: [id_acuerdo])
+}
+
+// =========================
+// REPORTE
+// =========================
+
+model Reporte {
+  id_reporte    Int           @id @default(autoincrement())
+  id_reportante Int
+  id_reportado  Int
+  id_trabajo    Int?
+  tipo          String        @db.VarChar(100)
+  descripcion   String?       @db.Text
+  evidencia     String?       @db.VarChar(255)
+  fecha         DateTime      @default(now())
+  estado        EstadoReporte @default(pendiente)
+
+  trabajo    Trabajo? @relation(fields: [id_trabajo], references: [id_trabajo])
+  reportante Usuario  @relation("ReporteEmisor", fields: [id_reportante], references: [id_usuario])
+  reportado  Usuario  @relation("ReporteReceptor", fields: [id_reportado], references: [id_usuario])
+}
+
+// =========================
+// HISTORIAL
+// =========================
+
+model Historial {
+  id_historial Int      @id @default(autoincrement())
+  id_usuario   Int
+  id_trabajo   Int
+  descripcion  String?  @db.VarChar(255)
+  fecha        DateTime @default(now())
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id_usuario])
+  trabajo Trabajo @relation(fields: [id_trabajo], references: [id_trabajo])
+}
+
+// =========================
+// NOTIFICACIÓN
+// =========================
+
+model Notificacion {
+  id_notificacion Int      @id @default(autoincrement())
+  id_usuario      Int
+  tipo            String   @db.VarChar(100)
+  mensaje         String?  @db.Text
+  enlace          String?  @db.VarChar(255)
+  leida           Boolean  @default(false)
+  fecha           DateTime @default(now())
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id_usuario])
+}

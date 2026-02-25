@@ -1,0 +1,10 @@
+{
+  "comisionPorcentaje": 10,
+  "moneda": "COP",
+  "linkAndroid": "",
+  "linkIOS": "",
+  "mensajeBienvenida": "¡Bienvenido a GXNova!",
+  "notificacionesPush": true,
+  "modoMantenimiento": false,
+  "emailSoporte": "soporte@gxnova.com"
+}
