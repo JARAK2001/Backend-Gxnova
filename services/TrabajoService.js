@@ -72,6 +72,53 @@ const TrabajoService = {
         });
     },
 
+    async obtenerTrabajosRecomendados(id_usuario) {
+        // 1. Obtener las habilidades del usuario
+        const habilidades = await prisma.habilidad.findMany({
+            where: { id_usuario: id_usuario },
+            select: { id_categoria: true }
+        });
+
+        if (!habilidades || habilidades.length === 0) {
+            return []; // Si no tiene habilidades, no hay recomendados
+        }
+
+        // 2. Extraer los IDs de las categorías
+        const categoriasIds = habilidades.map(h => h.id_categoria);
+
+        // 3. Buscar trabajos activos en esas categorías
+        return prisma.trabajo.findMany({
+            where: {
+                estado: 'publicado',
+                id_categoria: { in: categoriasIds },
+                id_empleador: { not: id_usuario } // No recomendar sus propios trabajos
+            },
+            include: {
+                empleador: {
+                    select: {
+                        id_usuario: true,
+                        nombre: true,
+                        apellido: true,
+                        foto_perfil: true
+                    }
+                },
+                categoria: {
+                    select: {
+                        id_categoria: true,
+                        nombre: true
+                    }
+                },
+                postulaciones: {
+                    select: {
+                        id_postulacion: true,
+                        estado: true
+                    }
+                }
+            },
+            orderBy: { fecha_creacion: 'desc' }
+        });
+    },
+
     async obtenerPorId(id) {
         return prisma.trabajo.findUnique({
             where: { id_trabajo: id },

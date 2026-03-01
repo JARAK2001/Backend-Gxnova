@@ -4,12 +4,16 @@ const AuthController = {
 
     async register(req, res) {
         // Desestructuración de datos
-        const { nombre, apellido, correo, password, telefono, rolNombre } = req.body;
+        const { nombre, apellido, correo, password, telefono, rolNombre, terminosAceptados } = req.body;
 
         try {
             // Validación mínima del Controller
             if (!correo || !password) {
                 return res.status(400).json({ message: 'El correo y la contraseña son obligatorios.' });
+            }
+
+            if (!terminosAceptados || terminosAceptados === 'false') {
+                return res.status(400).json({ message: 'Debes aceptar los Términos y Condiciones y la Política de Privacidad.' });
             }
 
             // Verificar si vienen archivos
@@ -38,6 +42,7 @@ const AuthController = {
                 password,
                 telefono,
                 rolNombre,
+                terminosAceptados: terminosAceptados === 'true' || terminosAceptados === true,
                 foto_cedula_path,
                 foto_perfil_path,
                 selfie_path

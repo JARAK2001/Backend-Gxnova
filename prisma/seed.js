@@ -98,6 +98,8 @@ async function main() {
                 estado: 'activo',
                 verificado: u.verificado,
                 fecha_verificacion: u.verificado ? new Date() : null,
+                terminos_aceptados: true,
+                fecha_aceptacion_terminos: new Date(),
                 // No incluimos foto_cedula ni foto_rostro para usuarios de seed
                 // Estos son usuarios de prueba pre-verificados
             }

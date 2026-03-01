@@ -54,19 +54,21 @@ enum EstadoTransaccion {
 // =========================
 
 model Usuario {
-  id_usuario         Int           @id @default(autoincrement())
-  nombre             String        @db.VarChar(100)
-  apellido           String        @db.VarChar(100)
-  correo             String        @unique @db.VarChar(150)
-  password_hash      String        @db.VarChar(255)
-  telefono           String?       @db.VarChar(20)
-  foto_perfil        String?       @db.VarChar(255)
-  fecha_registro     DateTime      @default(now())
-  estado             EstadoUsuario @default(activo)
-  foto_cedula        String?       @db.VarChar(255) // URL o path de la foto de la cédula
-  foto_rostro        String?       @db.VarChar(255) // URL de la selfie verificada
-  verificado         Boolean       @default(false) // Estado de la verificación de identidad
-  fecha_verificacion DateTime?
+  id_usuario                Int           @id @default(autoincrement())
+  nombre                    String        @db.VarChar(100)
+  apellido                  String        @db.VarChar(100)
+  correo                    String        @unique @db.VarChar(150)
+  password_hash             String        @db.VarChar(255)
+  telefono                  String?       @db.VarChar(20)
+  foto_perfil               String?       @db.VarChar(255)
+  fecha_registro            DateTime      @default(now())
+  estado                    EstadoUsuario @default(activo)
+  foto_cedula               String?       @db.VarChar(255) // URL o path de la foto de la cédula
+  foto_rostro               String?       @db.VarChar(255) // URL de la selfie verificada
+  verificado                Boolean       @default(false) // Estado de la verificación de identidad
+  fecha_verificacion        DateTime?
+  terminos_aceptados        Boolean       @default(true) // Todos los registros a partir de la DB Migration requerirán esto en true
+  fecha_aceptacion_terminos DateTime      @default(now())
 
   // Roles
   rolesAsignados UsuarioEnRol[]

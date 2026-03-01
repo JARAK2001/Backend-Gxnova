@@ -23,6 +23,17 @@ const TrabajoController = {
         }
     },
 
+    async obtenerTrabajosRecomendados(req, res) {
+        try {
+            const id_usuario = req.usuario.id_usuario;
+            const trabajos = await TrabajoService.obtenerTrabajosRecomendados(id_usuario);
+            return res.status(200).json({ trabajos });
+        } catch (error) {
+            console.error("Error en TrabajoController.obtenerTrabajosRecomendados:", error);
+            return res.status(500).json({ error: 'Error al obtener los trabajos recomendados.' });
+        }
+    },
+
     async obtenerTrabajoPorId(req, res) {
         const id = parseInt(req.params.id);
 

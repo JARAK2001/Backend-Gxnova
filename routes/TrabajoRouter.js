@@ -8,6 +8,9 @@ const { rolMiddleware } = require("../middleware/RolMiddleware");
 // Obtener todos los trabajos (público, con filtros opcionales)
 router.get("/", TrabajoController.obtenerTrabajos);
 
+// Obtener trabajos recomendados (requiere autenticación)
+router.get("/recomendados", verificarJWT, TrabajoController.obtenerTrabajosRecomendados);
+
 // Obtener trabajo por ID (público)
 router.get("/:id", TrabajoController.obtenerTrabajoPorId);
 

@@ -26,7 +26,7 @@ const limpiarUsuario = (usuario) => {
 
 const AuthServices = {
     async register(data) {
-        const { nombre, apellido, correo, password, telefono, rolNombre, foto_cedula_path, foto_perfil_path, selfie_path } = data;
+        const { nombre, apellido, correo, password, telefono, rolNombre, terminosAceptados, foto_cedula_path, foto_perfil_path, selfie_path } = data;
 
         const usuarioExistente = await UsuarioService.obtenerPorCorreo(correo);
         if (usuarioExistente) {
@@ -41,6 +41,8 @@ const AuthServices = {
             apellido,
             correo,
             password_hash: passwordHash,
+            terminos_aceptados: terminosAceptados,
+            fecha_aceptacion_terminos: new Date()
         };
 
         // Si se proporciona telefono, agregarlo
