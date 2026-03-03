@@ -90,6 +90,11 @@ model Usuario {
 
   // Habilidades
   habilidades Habilidad[]
+
+  // Chats
+  conversacionesComoTrabajador Conversacion[] @relation("ChatTrabajador")
+  conversacionesComoEmpleador  Conversacion[] @relation("ChatEmpleador")
+  mensajesEnviados             Mensaje[]      @relation("MensajeEmisor")
 }
 
 // =========================
@@ -171,6 +176,7 @@ model Trabajo {
   calificaciones Calificacion[]
   historial      Historial[]
   reportes       Reporte[]
+  conversacions  Conversacion[]
 }
 
 // =========================
@@ -301,4 +307,34 @@ model Notificacion {
   fecha           DateTime @default(now())
 
   usuario Usuario @relation(fields: [id_usuario], references: [id_usuario])
+}
+
+// =========================
+// CHAT / MENSAJERÍA
+// =========================
+
+model Conversacion {
+  id_conversacion Int      @id @default(autoincrement())
+  id_trabajador   Int
+  id_empleador    Int
+  id_trabajo      Int?
+  creado_en       DateTime @default(now())
+  actualizado_en  DateTime @default(now())
+
+  trabajador Usuario   @relation("ChatTrabajador", fields: [id_trabajador], references: [id_usuario])
+  empleador  Usuario   @relation("ChatEmpleador", fields: [id_empleador], references: [id_usuario])
+  trabajo    Trabajo?  @relation(fields: [id_trabajo], references: [id_trabajo])
+  mensajes   Mensaje[]
+}
+
+model Mensaje {
+  id_mensaje      Int      @id @default(autoincrement())
+  id_conversacion Int
+  id_emisor       Int
+  contenido       String   @db.Text
+  leido           Boolean  @default(false)
+  enviado_en      DateTime @default(now())
+
+  conversacion Conversacion @relation(fields: [id_conversacion], references: [id_conversacion])
+  emisor       Usuario      @relation("MensajeEmisor", fields: [id_emisor], references: [id_usuario])
 }

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const UsuarioController = require("../controllers/UsuarioController");
 
-const verificarJWT = require("../middleware/AuthMiddleware");
+const { verificarJWT } = require("../middleware/AuthMiddleware");
 const { rolMiddleware } = require("../middleware/RolMiddleware");
 
 router.get("/usuarios",

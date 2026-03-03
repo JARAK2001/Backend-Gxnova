@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const NotificacionController = require("../controllers/NotificacionController");
 
-const verificarJWT = require("../middleware/AuthMiddleware");
+const { verificarJWT } = require("../middleware/AuthMiddleware");
 
 // Obtener todas las notificaciones del usuario autenticado
 router.get("/",

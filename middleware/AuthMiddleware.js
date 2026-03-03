@@ -23,13 +23,13 @@ const verificarJWT = async (req, res, next) => {
 
         // Verificamos la validez del token
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-        
-        const usuario = await UsuarioService.obtenerPorId(decoded.id); 
+
+        const usuario = await UsuarioService.obtenerPorId(decoded.id);
 
         if (!usuario) {
             return res.status(401).json({ error: 'Token válido, pero el usuario ya no existe.' });
         }
-        
+
         req.usuario = usuario;
 
         // Pasar al siguiente middleware o al controlador
@@ -43,11 +43,31 @@ const verificarJWT = async (req, res, next) => {
         if (error.name === 'JsonWebTokenError') {
             return res.status(401).json({ error: 'Token inválido o malformado.' });
         }
-        
+
         // Otros errores internos
         console.error("Error en middleware JWT:", error);
         return res.status(500).json({ error: 'Error interno del servidor al verificar la autenticación.' });
     }
 };
 
-module.exports = verificarJWT;
+const opcionalJWT = async (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) return next();
+
+        const token = authHeader.split(' ')[1];
+        if (!token) return next();
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        const usuario = await UsuarioService.obtenerPorId(decoded.id);
+
+        if (usuario) {
+            req.usuario = usuario;
+        }
+        next();
+    } catch (error) {
+        next();
+    }
+};
+
+module.exports = { verificarJWT, opcionalJWT };

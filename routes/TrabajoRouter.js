@@ -2,11 +2,11 @@ const express = require("express");
 const router = express.Router();
 const TrabajoController = require("../controllers/TrabajoController");
 
-const verificarJWT = require("../middleware/AuthMiddleware");
+const { verificarJWT, opcionalJWT } = require("../middleware/AuthMiddleware");
 const { rolMiddleware } = require("../middleware/RolMiddleware");
 
-// Obtener todos los trabajos (público, con filtros opcionales)
-router.get("/", TrabajoController.obtenerTrabajos);
+// Obtener todos los trabajos (público, con filtros opcionales de habilidades si hay token)
+router.get("/", opcionalJWT, TrabajoController.obtenerTrabajos);
 
 // Obtener trabajos recomendados (requiere autenticación)
 router.get("/recomendados", verificarJWT, TrabajoController.obtenerTrabajosRecomendados);

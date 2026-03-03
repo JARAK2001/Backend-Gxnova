@@ -2,8 +2,42 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
+const http = require('http');
+const { Server } = require('socket.io');
+
 const app = express();
-const PORT = process.env.PORT
+const PORT = process.env.PORT || 3000;
+
+// Configuración del Servidor HTTP y WebSockets
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        methods: ['GET', 'POST']
+    }
+});
+
+io.on('connection', (socket) => {
+    console.log('Un usuario se ha conectado al WebSocket:', socket.id);
+
+    // Unir al usuario a su sala personal mediante su ID
+    socket.on('join_personal_room', (userId) => {
+        socket.join(`user_${userId}`);
+        console.log(`Usuario ${userId} se unió a su sala personal.`);
+    });
+
+    socket.on('join_chat', (chatId) => {
+        socket.join(`chat_${chatId}`);
+        console.log(`Usuario se unió a la sala de chat: chat_${chatId}`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Usuario desconectado:', socket.id);
+    });
+});
+
+// Adjuntar io a la app de express para usarlo en los controladores
+app.set('socketio', io);
 
 // Middleware
 app.use(cors({
@@ -31,6 +65,7 @@ const HistorialRouter = require('./routes/HistorialRouter');
 const NotificacionRouter = require('./routes/NotificacionRouter');
 const HabilidadRouter = require('./routes/HabilidadRouter');
 const AdminRouter = require('./routes/AdminRouter');
+const MensajeRouter = require('./routes/MensajeRouter');
 
 app.use('/api/usuarios', UsuarioRouter);
 app.use('/api/auth', AuthRouter);
@@ -45,6 +80,7 @@ app.use('/api/reportes', ReporteRouter);
 app.use('/api/historial', HistorialRouter);
 app.use('/api/notificaciones', NotificacionRouter);
 app.use('/api/habilidades', HabilidadRouter);
+app.use('/api/chat', MensajeRouter);
 
 
 // Ruta de prueba solo para ver si funcionaba
@@ -73,7 +109,7 @@ app.use((req, res) => {
     });
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+// Iniciar servidor usando el HTTP Server (no app directamente)
+server.listen(PORT, () => {
+    console.log(`Servidor con WebSockets corriendo en http://localhost:${PORT}`);
 });

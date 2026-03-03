@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const TransaccionController = require("../controllers/TransaccionController");
 
-const verificarJWT = require("../middleware/AuthMiddleware");
+const { verificarJWT } = require("../middleware/AuthMiddleware");
 const { rolMiddleware } = require("../middleware/RolMiddleware");
 
 // Obtener todas las transacciones (requiere autenticación)

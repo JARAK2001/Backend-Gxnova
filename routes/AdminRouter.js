@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const AdminController = require("../controllers/AdminController");
-const verificarJWT = require("../middleware/AuthMiddleware");
+const { verificarJWT } = require("../middleware/AuthMiddleware");
 const { rolMiddleware } = require("../middleware/RolMiddleware");
 
 // Primero verifica token, luego que sea administrador

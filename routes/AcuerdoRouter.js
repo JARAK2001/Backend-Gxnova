@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const AcuerdoController = require("../controllers/AcuerdoController");
 
-const verificarJWT = require("../middleware/AuthMiddleware");
+const { verificarJWT } = require("../middleware/AuthMiddleware");
 
 // Obtener todos los acuerdos (requiere autenticación)
 router.get("/",

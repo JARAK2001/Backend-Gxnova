@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const PostulacionController = require("../controllers/PostulacionController");
 
-const verificarJWT = require("../middleware/AuthMiddleware");
+const { verificarJWT } = require("../middleware/AuthMiddleware");
 const { rolMiddleware } = require("../middleware/RolMiddleware");
 
 // Obtener todas las postulaciones (requiere autenticación)

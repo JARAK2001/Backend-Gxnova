@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const HistorialController = require("../controllers/HistorialController");
 
-const verificarJWT = require("../middleware/AuthMiddleware");
+const { verificarJWT } = require("../middleware/AuthMiddleware");
 
 // Obtener todos los historiales (requiere autenticación)
 router.get("/",

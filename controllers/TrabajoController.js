@@ -11,8 +11,10 @@ const TrabajoController = {
                 busqueda: req.query.busqueda,
                 ubicacion: req.query.ubicacion,
                 urgente: req.query.urgente,
+                soloHabilidades: req.query.soloHabilidades, // Nuevo: para activar filtro manual
                 limit: req.query.limit ? parseInt(req.query.limit) : undefined,
-                skip: req.query.skip ? parseInt(req.query.skip) : undefined
+                skip: req.query.skip ? parseInt(req.query.skip) : undefined,
+                id_usuario_actual: req.usuario ? req.usuario.id_usuario : undefined // Para identificar al usuario
             };
 
             const trabajos = await TrabajoService.obtenerTrabajos(filtros);

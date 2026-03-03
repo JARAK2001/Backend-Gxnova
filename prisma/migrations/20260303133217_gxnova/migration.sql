@@ -13,6 +13,8 @@ CREATE TABLE `Usuario` (
     `foto_rostro` VARCHAR(255) NULL,
     `verificado` BOOLEAN NOT NULL DEFAULT false,
     `fecha_verificacion` DATETIME(3) NULL,
+    `terminos_aceptados` BOOLEAN NOT NULL DEFAULT true,
+    `fecha_aceptacion_terminos` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `Usuario_correo_key`(`correo`),
     PRIMARY KEY (`id_usuario`)
@@ -181,6 +183,30 @@ CREATE TABLE `Notificacion` (
     PRIMARY KEY (`id_notificacion`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `Conversacion` (
+    `id_conversacion` INTEGER NOT NULL AUTO_INCREMENT,
+    `id_trabajador` INTEGER NOT NULL,
+    `id_empleador` INTEGER NOT NULL,
+    `id_trabajo` INTEGER NULL,
+    `creado_en` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `actualizado_en` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    PRIMARY KEY (`id_conversacion`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Mensaje` (
+    `id_mensaje` INTEGER NOT NULL AUTO_INCREMENT,
+    `id_conversacion` INTEGER NOT NULL,
+    `id_emisor` INTEGER NOT NULL,
+    `contenido` TEXT NOT NULL,
+    `leido` BOOLEAN NOT NULL DEFAULT false,
+    `enviado_en` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    PRIMARY KEY (`id_mensaje`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `UsuarioEnRol` ADD CONSTRAINT `UsuarioEnRol_id_usuario_fkey` FOREIGN KEY (`id_usuario`) REFERENCES `Usuario`(`id_usuario`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -243,3 +269,18 @@ ALTER TABLE `Historial` ADD CONSTRAINT `Historial_id_trabajo_fkey` FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE `Notificacion` ADD CONSTRAINT `Notificacion_id_usuario_fkey` FOREIGN KEY (`id_usuario`) REFERENCES `Usuario`(`id_usuario`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Conversacion` ADD CONSTRAINT `Conversacion_id_trabajador_fkey` FOREIGN KEY (`id_trabajador`) REFERENCES `Usuario`(`id_usuario`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Conversacion` ADD CONSTRAINT `Conversacion_id_empleador_fkey` FOREIGN KEY (`id_empleador`) REFERENCES `Usuario`(`id_usuario`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Conversacion` ADD CONSTRAINT `Conversacion_id_trabajo_fkey` FOREIGN KEY (`id_trabajo`) REFERENCES `Trabajo`(`id_trabajo`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Mensaje` ADD CONSTRAINT `Mensaje_id_conversacion_fkey` FOREIGN KEY (`id_conversacion`) REFERENCES `Conversacion`(`id_conversacion`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Mensaje` ADD CONSTRAINT `Mensaje_id_emisor_fkey` FOREIGN KEY (`id_emisor`) REFERENCES `Usuario`(`id_usuario`) ON DELETE RESTRICT ON UPDATE CASCADE;

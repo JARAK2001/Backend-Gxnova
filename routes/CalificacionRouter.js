@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const CalificacionController = require("../controllers/CalificacionController");
-const verificarJWT = require("../middleware/AuthMiddleware");
+const { verificarJWT } = require("../middleware/AuthMiddleware");
 
 // Crear calificación
 router.post("/", verificarJWT, CalificacionController.crearCalificacion);

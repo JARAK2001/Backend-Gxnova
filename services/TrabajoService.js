@@ -5,12 +5,52 @@ const TrabajoService = {
     async obtenerTrabajos(filtros = {}) {
         const where = {};
 
+        // 🚀 NUEVA LÓGICA: Filtrar por habilidades SOLO si:
+        // 1. El usuario es Trabajador PURO (por seguridad/UX).
+        // 2. O el usuario (independientemente de sus roles) solicita explícitamente el filtro (soloHabilidades === 'true').
+        if (filtros.id_usuario_actual) {
+            const usuario = await prisma.usuario.findUnique({
+                where: { id_usuario: filtros.id_usuario_actual },
+                include: { rolesAsignados: { include: { rol: true } } }
+            });
+
+            const roles = usuario ? usuario.rolesAsignados.map(r => r.rol.nombre) : [];
+            const esTrabajador = roles.includes('Trabajador');
+            const esPrivilegiado = roles.includes('Empleador') || roles.includes('Administrador');
+            const deseaFiltrar = filtros.soloHabilidades === 'true';
+
+            // Ejecutamos el filtro si es trabajador puro O si cualquier usuario con habilidades lo pide manualmente
+            if ((esTrabajador && !esPrivilegiado) || deseaFiltrar) {
+                const habilidades = await prisma.habilidad.findMany({
+                    where: { id_usuario: filtros.id_usuario_actual },
+                    select: { id_categoria: true }
+                });
+
+                if (habilidades && habilidades.length > 0) {
+                    const categoriasIds = habilidades.map(h => h.id_categoria);
+                    where.id_categoria = { in: categoriasIds };
+                } else {
+                    // Si se forzó el filtro o es trabajador puro sin habilidades, no ve nada
+                    return [];
+                }
+            }
+        }
+
         if (filtros.estado) {
             where.estado = filtros.estado;
         }
 
-        if (filtros.id_categoria) {
+        if (filtros.id_categoria && !where.id_categoria) {
             where.id_categoria = parseInt(filtros.id_categoria);
+        } else if (filtros.id_categoria && where.id_categoria && where.id_categoria.in) {
+            // Si ya había filtro por habilidades, y además el usuario filtró en la UI por una categoría en específico
+            const catId = parseInt(filtros.id_categoria);
+            // Solo aplicar si el filtro UI está dentro de sus habilidades permitidas
+            if (where.id_categoria.in.includes(catId)) {
+                where.id_categoria = catId;
+            } else {
+                where.id_categoria = -1; // No tiene permiso para ver esta categoría
+            }
         }
 
         if (filtros.id_empleador) {

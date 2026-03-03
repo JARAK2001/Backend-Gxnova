@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const ReporteController = require("../controllers/ReporteController");
 
-const verificarJWT = require("../middleware/AuthMiddleware");
+const { verificarJWT } = require("../middleware/AuthMiddleware");
 const { rolMiddleware } = require("../middleware/RolMiddleware");
 
 // Obtener todos los reportes (requiere autenticación, solo Administrador)

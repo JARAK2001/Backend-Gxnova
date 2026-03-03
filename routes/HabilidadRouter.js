@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const HabilidadController = require('../controllers/HabilidadController');
-const verificarJWT = require('../middleware/AuthMiddleware');
+const { verificarJWT } = require('../middleware/AuthMiddleware');
 
 // Agregar una habilidad
 router.post('/', verificarJWT, HabilidadController.agregar);
