@@ -230,6 +230,17 @@ const UsuarioController = {
             return res.status(500).json({ error: 'Error al obtener el perfil público.' });
         }
     },
+
+    async listarTrabajadores(req, res) {
+        try {
+            const { busqueda = '', categoria = '' } = req.query;
+            const trabajadores = await UsuarioService.listarTrabajadores({ busqueda, categoria });
+            return res.status(200).json({ trabajadores });
+        } catch (error) {
+            console.error('Error en UsuarioController.listarTrabajadores:', error);
+            return res.status(500).json({ error: 'Error al obtener trabajadores.' });
+        }
+    },
 };
 
 module.exports = UsuarioController;

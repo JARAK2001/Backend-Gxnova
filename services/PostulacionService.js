@@ -94,6 +94,7 @@ const PostulacionService = {
                 id_trabajo: data.id_trabajo,
                 id_trabajador: data.id_trabajador,
                 mensaje: data.mensaje,
+                precio_propuesto: data.precio_propuesto ? parseFloat(data.precio_propuesto) : null,
                 estado: 'pendiente'
             },
             include: {
@@ -131,6 +132,7 @@ const PostulacionService = {
         if (data.mensaje !== undefined) updateData.mensaje = data.mensaje;
         if (data.estado) updateData.estado = data.estado;
         if (data.id_acuerdo) updateData.id_acuerdo = parseInt(data.id_acuerdo);
+        if (data.precio_propuesto !== undefined) updateData.precio_propuesto = data.precio_propuesto ? parseFloat(data.precio_propuesto) : null;
 
         return prisma.postulacion.update({
             where: { id_postulacion: id },

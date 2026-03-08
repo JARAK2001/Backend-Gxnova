@@ -35,7 +35,7 @@ const VerificationService = {
 
         console.log("[VerificationService] Selfie coincide con cédula");
 
-        // Verificar que el rostro no esté duplicado
+        // Verificar que el rostro no esté duplicado usando la Búsqueda Masiva del microservicio local
         console.log("[VerificationService] Paso 2: Verificando duplicados...");
 
         // Obtener todos los usuarios verificados con foto_rostro
@@ -47,54 +47,28 @@ const VerificationService = {
                 },
             },
             select: {
-                id_usuario: true,
                 foto_rostro: true,
-                correo: true,
             },
         });
-
-        console.log(
-            `[VerificationService] Comparando contra ${usuariosVerificados.length} usuarios verificados...`
-        );
 
         if (usuariosVerificados.length === 0) {
             console.log("[VerificationService] No hay usuarios verificados, no hay duplicados");
             return true;
         }
 
-        // Comparar en paralelo usando Promise.all()
-        const comparaciones = usuariosVerificados.map(async (usuario) => {
-            try {
-                const coincide = await FaceVerificationService.compararRostros(
-                    usuario.foto_rostro,
-                    fotoRostroUrl
-                );
+        // Extraer lista de URLs de rostros
+        const urlRostrosRegistrados = usuariosVerificados.map(u => u.foto_rostro);
 
-                if (coincide) {
-                    console.warn(
-                        `[VerificationService] Rostro duplicado detectado con usuario: ${usuario.correo}`
-                    );
-                    return { duplicado: true, usuario };
-                }
+        console.log(`[VerificationService] Enviando ${urlRostrosRegistrados.length} rostros al microservicio para búsqueda rápida...`);
 
-                return { duplicado: false };
-            } catch (error) {
-                console.error(
-                    `[VerificationService] Error comparando con usuario ${usuario.id_usuario}:`,
-                    error.message
-                );
-                // Si falla una comparación, continuamos con las demás
-                return { duplicado: false };
-            }
-        });
-
-        // Ejecutar todas las comparaciones en paralelo
-        const resultados = await Promise.all(comparaciones);
-
-        // Verificar si alguna comparación encontró un duplicado
-        const duplicadoEncontrado = resultados.find((r) => r.duplicado);
+        // Llamar al endpoint /find-match del microservicio
+        const duplicadoEncontrado = await FaceVerificationService.buscarDuplicado(
+            fotoRostroUrl,
+            urlRostrosRegistrados
+        );
 
         if (duplicadoEncontrado) {
+            console.warn("[VerificationService] Se detectó un rostro duplicado en la base de datos.");
             throw new Error("Este rostro ya está registrado con otro usuario");
         }
 

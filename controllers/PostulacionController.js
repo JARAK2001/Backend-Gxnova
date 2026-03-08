@@ -35,7 +35,7 @@ const PostulacionController = {
     },
 
     async crearPostulacion(req, res) {
-        const { id_trabajo, mensaje } = req.body;
+        const { id_trabajo, mensaje, precio_propuesto } = req.body;
 
         if (!id_trabajo) {
             return res.status(400).json({ error: 'El id_trabajo es obligatorio.' });
@@ -45,7 +45,8 @@ const PostulacionController = {
             const nuevaPostulacion = await PostulacionService.crearPostulacion({
                 id_trabajo: parseInt(id_trabajo),
                 id_trabajador: req.usuario.id_usuario,
-                mensaje
+                mensaje,
+                precio_propuesto: precio_propuesto ? parseFloat(precio_propuesto) : null
             });
 
             return res.status(201).json({

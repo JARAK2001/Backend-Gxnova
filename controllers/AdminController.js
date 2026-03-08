@@ -215,6 +215,37 @@ const AdminController = {
             console.error("Error rechazando reporte:", error);
             res.status(500).json({ error: "Error al rechazar reporte" });
         }
+    },
+
+    // ============ HABILIDADES ============
+    async obtenerHabilidadesPendientes(req, res) {
+        try {
+            const habilidades = await AdminService.obtenerHabilidadesPendientes();
+            res.json({ habilidades });
+        } catch (error) {
+            console.error("Error obteniendo habilidades pendientes:", error);
+            res.status(500).json({ error: "Error al obtener habilidades pendientes" });
+        }
+    },
+
+    async validarHabilidad(req, res) {
+        const { id } = req.params;
+        const { aprobado } = req.body;
+
+        if (typeof aprobado !== 'boolean') {
+            return res.status(400).json({ error: "El campo 'aprobado' debe ser un booleano." });
+        }
+
+        try {
+            const habilidad = await AdminService.validarHabilidad(id, aprobado);
+            const mensaje = aprobado
+                ? "Habilidad aprobada correctamente."
+                : "Habilidad rechazada correctamente.";
+            res.json({ message: mensaje, habilidad });
+        } catch (error) {
+            console.error("Error validando habilidad:", error);
+            res.status(500).json({ error: "Error al validar habilidad" });
+        }
     }
 };
 

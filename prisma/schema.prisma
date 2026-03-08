@@ -41,6 +41,12 @@ enum EstadoReporte {
   resuelto
 }
 
+enum EstadoHabilidad {
+  pendiente_revision
+  aprobada
+  rechazada
+}
+
 enum EstadoTransaccion {
   pendiente
   pagado_empleador // Dinero: empleador marcó como pagado, espera confirmación del trabajador
@@ -135,11 +141,13 @@ model Categoria {
 }
 
 model Habilidad {
-  id_habilidad Int      @id @default(autoincrement())
-  id_usuario   Int
-  id_categoria Int
-  descripcion  String?  @db.Text
-  tarifa_hora  Decimal?
+  id_habilidad    Int             @id @default(autoincrement())
+  id_usuario      Int
+  id_categoria    Int
+  descripcion     String?         @db.Text
+  tarifa_hora     Decimal?
+  estado          EstadoHabilidad @default(aprobada)
+  certificado_url String?         @db.VarChar(500)
 
   usuario   Usuario   @relation(fields: [id_usuario], references: [id_usuario])
   categoria Categoria @relation(fields: [id_categoria], references: [id_categoria])
@@ -189,6 +197,7 @@ model Postulacion {
   id_trabajador     Int
   id_acuerdo        Int?              @unique
   mensaje           String?           @db.Text
+  precio_propuesto  Decimal?
   estado            EstadoPostulacion @default(pendiente)
   fecha_postulacion DateTime          @default(now())
 

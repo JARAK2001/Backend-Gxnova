@@ -9,75 +9,78 @@ const FaceVerificationService = {
      */
     async compararRostros(urlImagen1, urlImagen2) {
         try {
-            // Validar que existan las credenciales
-            if (!process.env.FACEPP_API_KEY || !process.env.FACEPP_API_SECRET) {
-                throw new Error(
-                    "ERROR: Faltan credenciales de Face++ API en variables de entorno"
-                );
-            }
+            // Validar que exista la URL del servicio
+            const SERVICE_URL = process.env.FACIAL_RECOGNITION_SERVICE_URL || "http://localhost:8000";
 
-            // Llamada a Face++ API
+            // Llamada al microservicio local
             const response = await axios.post(
-                "https://api-us.faceplusplus.com/facepp/v3/compare",
-                new URLSearchParams({
-                    api_key: process.env.FACEPP_API_KEY,
-                    api_secret: process.env.FACEPP_API_SECRET,
-                    image_url1: urlImagen1,
-                    image_url2: urlImagen2,
-                }),
+                `${SERVICE_URL}/compare-faces`,
+                {
+                    imageUrl1: urlImagen1,
+                    imageUrl2: urlImagen2
+                },
                 {
                     headers: {
-                        "Content-Type": "application/x-www-form-urlencoded",
+                        "Content-Type": "application/json",
                     },
                 }
             );
 
-            const { confidence, faces1, faces2 } = response.data;
+            const data = response.data;
 
-            console.log(`[Face++] Comparación de rostros - Confianza: ${confidence}%`);
+            console.log(`[FaceRecognition] Comparación de rostros - Distancia: ${data.distance}`);
 
-            // Verificar que se detectaron rostros en ambas imágenes
-            if (!faces1 || faces1.length === 0) {
-                console.warn("[Face++] No se detectó rostro en la primera imagen");
-                return false;
-            }
-
-            if (!faces2 || faces2.length === 0) {
-                console.warn("[Face++] No se detectó rostro en la segunda imagen");
-                return false;
-            }
-
-            // Umbral de confianza: 70%
-            const UMBRAL_CONFIANZA = 70;
-            const coincide = confidence >= UMBRAL_CONFIANZA;
+            const coincide = data.match;
 
             console.log(
-                `[Face++] Resultado: ${coincide ? "COINCIDE" : "NO COINCIDE"} (${confidence}% >= ${UMBRAL_CONFIANZA}%)`
+                `[FaceRecognition] Resultado: ${coincide ? "COINCIDE" : "NO COINCIDE"} (Distancia: ${data.distance})`
             );
 
             return coincide;
         } catch (error) {
-            // Manejo de errores específicos de Face++ API
+            // Manejo de errores específicos del microservicio
             if (error.response?.data) {
-                console.error("[Face++] Error de API:", error.response.data);
-
-                // Errores comunes de Face++ API
-                const errorMsg = error.response.data.error_message;
-                if (errorMsg?.includes("INVALID_IMAGE_URL")) {
-                    throw new Error("URL de imagen inválida o inaccesible");
-                }
-                if (errorMsg?.includes("IMAGE_ERROR")) {
-                    throw new Error("Error al procesar la imagen. Verifica el formato.");
-                }
-                if (errorMsg?.includes("CONCURRENCY_LIMIT_EXCEEDED")) {
-                    throw new Error("Límite de concurrencia excedido. Intenta nuevamente.");
-                }
+                console.error("[FaceRecognition] Error del servicio:", error.response.data);
+                throw new Error(error.response.data.detail || "Error al procesar la imagen.");
             }
 
-            console.error("[Face++] Error inesperado:", error.message);
-            throw new Error("Error al verificar rostros con Face++ API");
+            console.error("[FaceRecognition] Error inesperado:", error.message);
+            throw new Error("Error al verificar rostros con el microservicio local");
         }
     },
+
+    /**
+     * Busca si un rostro ya existe en una lista de urls candidatas
+     * @param {string} targetUrl URL del rostro a buscar
+     * @param {string[]} candidateUrls URLs de rostros ya registrados
+     * @returns {Promise<boolean>} true si encontró un duplicado
+     */
+    async buscarDuplicado(targetUrl, candidateUrls) {
+        try {
+            const SERVICE_URL = process.env.FACIAL_RECOGNITION_SERVICE_URL || "http://localhost:8000";
+
+            if (!candidateUrls || candidateUrls.length === 0) return false;
+
+            const response = await axios.post(
+                `${SERVICE_URL}/find-match`,
+                {
+                    targetUrl: targetUrl,
+                    candidateUrls: candidateUrls
+                },
+                {
+                    headers: { "Content-Type": "application/json" }
+                }
+            );
+
+            const data = response.data;
+            console.log(`[FaceRecognition] Búsqueda de duplicados - ¿Encontrado?: ${data.matchFound}`);
+
+            return data.matchFound;
+        } catch (error) {
+            console.error("[FaceRecognition] Error al buscar duplicados:", error.message);
+            throw new Error("Error al buscar rostros duplicados con el microservicio local");
+        }
+    }
 };
 
 module.exports = FaceVerificationService;

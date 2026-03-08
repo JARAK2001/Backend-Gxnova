@@ -147,6 +147,34 @@ const AdminService = {
                 }
             });
         }
+    },
+
+    async obtenerHabilidadesPendientes() {
+        return prisma.habilidad.findMany({
+            where: { estado: 'pendiente_revision' },
+            include: {
+                categoria: true,
+                usuario: {
+                    select: {
+                        id_usuario: true,
+                        nombre: true,
+                        apellido: true,
+                        correo: true,
+                        foto_perfil: true
+                    }
+                }
+            },
+            orderBy: { id_habilidad: 'desc' }
+        });
+    },
+
+    async validarHabilidad(id, aprobado) {
+        const nuevoEstado = aprobado ? 'aprobada' : 'rechazada';
+        return prisma.habilidad.update({
+            where: { id_habilidad: parseInt(id) },
+            data: { estado: nuevoEstado },
+            include: { categoria: true, usuario: { select: { id_usuario: true, nombre: true, apellido: true, correo: true } } }
+        });
     }
 };
 

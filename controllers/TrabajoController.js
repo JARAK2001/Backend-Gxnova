@@ -11,7 +11,7 @@ const TrabajoController = {
                 busqueda: req.query.busqueda,
                 ubicacion: req.query.ubicacion,
                 urgente: req.query.urgente,
-                soloHabilidades: req.query.soloHabilidades, // Nuevo: para activar filtro manual
+                soloHabilidades: req.query.soloHabilidades, // para activar filtro manual
                 limit: req.query.limit ? parseInt(req.query.limit) : undefined,
                 skip: req.query.skip ? parseInt(req.query.skip) : undefined,
                 id_usuario_actual: req.usuario ? req.usuario.id_usuario : undefined // Para identificar al usuario
@@ -168,6 +168,9 @@ const TrabajoController = {
             });
         } catch (error) {
             console.error("Error en TrabajoController.eliminarTrabajo:", error);
+            if (error.message && (error.message.includes('No se puede eliminar') || error.message.includes('cancélalo'))) {
+                return res.status(400).json({ error: error.message });
+            }
             return res.status(500).json({ error: 'Error al eliminar el trabajo.' });
         }
     }

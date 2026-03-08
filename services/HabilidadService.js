@@ -2,13 +2,15 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const HabilidadService = {
-    async agregarHabilidad(id_usuario, data) {
+    async agregarHabilidad(id_usuario, data, estado = 'aprobada', certificado_url = null) {
         return prisma.habilidad.create({
             data: {
                 id_usuario,
                 id_categoria: parseInt(data.id_categoria),
                 descripcion: data.descripcion,
-                tarifa_hora: data.tarifa_hora ? parseFloat(data.tarifa_hora) : null
+                tarifa_hora: data.tarifa_hora ? parseFloat(data.tarifa_hora) : null,
+                estado,
+                certificado_url
             },
             include: {
                 categoria: true

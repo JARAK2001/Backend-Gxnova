@@ -57,6 +57,8 @@ CREATE TABLE `Habilidad` (
     `id_categoria` INTEGER NOT NULL,
     `descripcion` TEXT NULL,
     `tarifa_hora` DECIMAL(65, 30) NULL,
+    `estado` ENUM('pendiente_revision', 'aprobada', 'rechazada') NOT NULL DEFAULT 'aprobada',
+    `certificado_url` VARCHAR(500) NULL,
 
     UNIQUE INDEX `Habilidad_id_usuario_id_categoria_key`(`id_usuario`, `id_categoria`),
     PRIMARY KEY (`id_habilidad`)
@@ -90,6 +92,7 @@ CREATE TABLE `Postulacion` (
     `id_trabajador` INTEGER NOT NULL,
     `id_acuerdo` INTEGER NULL,
     `mensaje` TEXT NULL,
+    `precio_propuesto` DECIMAL(65, 30) NULL,
     `estado` ENUM('pendiente', 'aceptada', 'rechazada') NOT NULL DEFAULT 'pendiente',
     `fecha_postulacion` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 

@@ -36,4 +36,8 @@ router.delete("/roles/:id", AdminController.eliminarRol);
 router.get("/config", AdminController.obtenerConfiguracion);
 router.put("/config", AdminController.actualizarConfiguracion);
 
+// Habilidades pendientes de validación manual
+router.get("/habilidades-pendientes", AdminController.obtenerHabilidadesPendientes);
+router.post("/habilidades/:id/validar", AdminController.validarHabilidad);
+
 module.exports = router;

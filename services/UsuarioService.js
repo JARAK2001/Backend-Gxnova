@@ -185,6 +185,63 @@ const UsuarioService = {
             calificacionesRecientes: usuario.calificacionesRecibidas
         };
     },
+    async listarTrabajadores({ busqueda = '', categoria = '' } = {}) {
+        const trabajadores = await prisma.usuario.findMany({
+            where: {
+                rolesAsignados: {
+                    some: {
+                        rol: { nombre: 'Trabajador' }
+                    }
+                },
+                habilidades: {
+                    some: { estado: 'aprobada' }
+                },
+                estado: 'activo',
+                // Filtro por nombre/apellido
+                ...(busqueda ? {
+                    OR: [
+                        { nombre: { contains: busqueda } },
+                        { apellido: { contains: busqueda } },
+                    ]
+                } : {}),
+            },
+            select: {
+                id_usuario: true,
+                nombre: true,
+                apellido: true,
+                foto_perfil: true,
+                fecha_registro: true,
+                habilidades: {
+                    where: {
+                        estado: 'aprobada',
+                        ...(categoria ? { categoria: { nombre: { contains: categoria } } } : {}),
+                    },
+                    include: { categoria: true },
+                    take: 4,
+                },
+                calificacionesRecibidas: {
+                    select: { puntuacion: true },
+                },
+            },
+            orderBy: { fecha_registro: 'desc' },
+        });
+
+        // Si se filtró por categoría, excluir trabajadores sin habilidades en esa categoría
+        const resultado = trabajadores.filter(t => {
+            if (!categoria) return true;
+            return t.habilidades.length > 0;
+        });
+
+        return resultado.map(t => {
+            const calificaciones = t.calificacionesRecibidas;
+            const total = calificaciones.length;
+            const promedio = total > 0
+                ? Math.round((calificaciones.reduce((s, c) => s + c.puntuacion, 0) / total) * 10) / 10
+                : 0;
+            const { calificacionesRecibidas, ...resto } = t;
+            return { ...resto, estadisticas: { promedio, total } };
+        });
+    },
 };
 
 module.exports = UsuarioService;

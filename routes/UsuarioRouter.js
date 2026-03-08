@@ -37,6 +37,12 @@ router.post("/agregar-rol",
 
 
 
+// LISTAR TRABAJADORES DISPONIBLES (para empleadores)
+router.get("/trabajadores",
+    verificarJWT,
+    UsuarioController.listarTrabajadores
+);
+
 const upload = require('../middleware/UploadMiddleware');
 
 router.put("/:id",

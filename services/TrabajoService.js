@@ -263,9 +263,27 @@ const TrabajoService = {
     },
 
     async eliminarTrabajo(id) {
-        return prisma.trabajo.delete({
-            where: { id_trabajo: id }
+        const trabajo = await prisma.trabajo.findUnique({
+            where: { id_trabajo: id },
+            include: {
+                postulaciones: true,
+                acuerdos: true
+            }
         });
+
+        if (trabajo && (trabajo.postulaciones.length > 0 || trabajo.acuerdos.length > 0)) {
+            throw new Error("No se puede eliminar un trabajo que ya tiene postulaciones o acuerdos. Utiliza la opción de 'Cancelar'.");
+        }
+
+        try {
+            await prisma.historial.deleteMany({ where: { id_trabajo: id } });
+
+            return await prisma.trabajo.delete({
+                where: { id_trabajo: id }
+            });
+        } catch (error) {
+            throw new Error("No se pudo eliminar el trabajo porque tiene otros registros asociados. Por favor, cancélalo en su lugar.");
+        }
     }
 };
 
