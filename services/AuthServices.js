@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const UsuarioService = require("./UsuarioService");
 const VerificationService = require("./VerificationService");
+const EmailService = require("./EmailService");
 
 // Validación de variable de entorno
 if (!process.env.JWT_SECRET_KEY) {
@@ -16,6 +17,10 @@ const generarToken = (usuario) => {
         process.env.JWT_SECRET_KEY,
         { expiresIn: "1d" }
     );
+};
+
+const generarCodigo6Digitos = () => {
+    return String(Math.floor(100000 + Math.random() * 900000));
 };
 
 const limpiarUsuario = (usuario) => {
@@ -55,36 +60,8 @@ const AuthServices = {
             datosUsuario.foto_perfil = foto_perfil_path;
         }
 
-        // ===== VERIFICACIÓN FACIAL OBLIGATORIA PARA EMPLEADOR Y TRABAJADOR =====
-        // Validar que ambas imágenes (cédula y selfie) estén presentes
-        if (!foto_cedula_path || !selfie_path) {
-            throw new Error("La foto de cédula y la selfie son obligatorias para el registro");
-        }
-
-        // Guardar foto_cedula
-        datosUsuario.foto_cedula = foto_cedula_path;
-
-        // Intentar verificar identidad con Face++
-        try {
-            const esVerificado = await VerificationService.verificarIdentidad(
-                foto_cedula_path,
-                selfie_path
-            );
-
-            if (esVerificado) {
-                // Guardar la selfie verificada
-                datosUsuario.foto_rostro = selfie_path;
-                datosUsuario.verificado = true;
-                datosUsuario.fecha_verificacion = new Date();
-
-                console.log("[AuthServices] Usuario verificado exitosamente con Face++");
-            }
-        } catch (error) {
-            // Si la verificación falla, lanzar el error específico
-            console.error("[AuthServices] Error en verificación facial:", error.message);
-            throw error; // Propagar el error (rostro no coincide o duplicado)
-        }
-
+        // ===== CREAR EL USUARIO SIN VERIFICACIÓN FACIAL =====
+        // Las fotos se subirán en el Paso 3, después de verificar el correo
         const nuevoUsuario = await UsuarioService.crearUsuario(datosUsuario);
 
         // Determinar el rol si no se proporciona, usar "Trabajador" por defecto
@@ -111,13 +88,85 @@ const AuthServices = {
             nuevoUsuario.id_usuario
         );
 
+        // Generar código de verificación de correo
+        const codigo = generarCodigo6Digitos();
+        const expiracion = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+        await prisma.usuario.update({
+            where: { id_usuario: nuevoUsuario.id_usuario },
+            data: {
+                codigo_verificacion: codigo,
+                codigo_verificacion_expira: expiracion,
+                correo_verificado: false,
+            }
+        });
+
+        // Enviar correo con el código (sin bloquear el flujo)
+        EmailService.enviarCorreoVerificacion(nuevoUsuario.correo, nuevoUsuario.nombre, codigo).catch(err => {
+            console.error("[AuthServices] Aviso: No se pudo enviar el correo de verificación", err.message);
+        });
+
         const token = generarToken(nuevoUsuario);
 
         return {
-            message: "Usuario registrado correctamente.",
+            message: "Usuario registrado. Por favor verifica tu correo.",
             usuario: limpiarUsuario(usuarioConRol),
-            token
+            token,
+            requiereVerificacion: true,
         };
+    },
+
+    async verificarIdentidadUsuario({ correo, foto_cedula_path, foto_perfil_path, selfie_path }) {
+        const usuario = await prisma.usuario.findUnique({ where: { correo } });
+        if (!usuario) throw new Error("Usuario no encontrado.");
+        if (!usuario.correo_verificado) throw new Error("Primero debes verificar tu correo.");
+        if (usuario.verificado) throw new Error("Este usuario ya tiene su identidad verificada.");
+
+        if (!foto_cedula_path || !selfie_path) {
+            throw new Error("La foto de cédula y la selfie son obligatorias para verificar la identidad.");
+        }
+
+        // Ejecutar verificación con el microservicio Docker
+        try {
+            const esVerificado = await VerificationService.verificarIdentidad(
+                foto_cedula_path,
+                selfie_path
+            );
+
+            if (esVerificado) {
+                const datosActualizacion = {
+                    foto_cedula: foto_cedula_path,
+                    foto_rostro: selfie_path,
+                    verificado: true,
+                    fecha_verificacion: new Date(),
+                };
+
+                if (foto_perfil_path) {
+                    datosActualizacion.foto_perfil = foto_perfil_path;
+                }
+
+                await prisma.usuario.update({
+                    where: { correo },
+                    data: datosActualizacion
+                });
+
+                console.log(`[AuthServices] Identidad verificada exitosamente para: ${correo}`);
+
+                // Enviar correo de bienvenida al completar todo el proceso
+                const usuarioActualizado = await UsuarioService.obtenerPorId(usuario.id_usuario);
+                EmailService.enviarCorreoBienvenida(usuario.correo, usuario.nombre).catch(() => {});
+
+                const token = generarToken(usuario);
+                return {
+                    message: "Identidad verificada exitosamente. ¡Bienvenido a Gxnova!",
+                    usuario: limpiarUsuario(usuarioActualizado),
+                    token,
+                };
+            }
+        } catch (error) {
+            console.error("[AuthServices] Error en verificación de identidad:", error.message);
+            throw error;
+        }
     },
 
     async login(data) {
@@ -133,6 +182,29 @@ const AuthServices = {
             throw new Error("Credenciales inválidas");
         }
 
+        // Verificar si el correo fue confirmado
+        if (!usuario.correo_verificado) {
+            // Reenviar código si expiró
+            const ahora = new Date();
+            const expirado = !usuario.codigo_verificacion_expira || usuario.codigo_verificacion_expira < ahora;
+            if (expirado) {
+                const nuevoCodigo = generarCodigo6Digitos();
+                const nuevaExpiracion = new Date(Date.now() + 15 * 60 * 1000);
+                await prisma.usuario.update({
+                    where: { id_usuario: usuario.id_usuario },
+                    data: { codigo_verificacion: nuevoCodigo, codigo_verificacion_expira: nuevaExpiracion }
+                });
+                EmailService.enviarCorreoVerificacion(usuario.correo, usuario.nombre, nuevoCodigo).catch(err => {
+                    console.error("[AuthServices] Aviso: No se pudo reenviar el código", err.message);
+                });
+            }
+            return {
+                requiereVerificacion: true,
+                correo: usuario.correo,
+                message: "Debes verificar tu correo antes de iniciar sesión. Se envió un nuevo código."
+            };
+        }
+
         // Cargar usuario completo con roles
         const usuarioConRol = await UsuarioService.obtenerPorId(usuario.id_usuario);
 
@@ -146,6 +218,56 @@ const AuthServices = {
 
     async logout() {
         return true;
+    },
+
+    async verificarCodigo({ correo, codigo }) {
+        const usuario = await prisma.usuario.findUnique({ where: { correo } });
+        if (!usuario) throw new Error("Usuario no encontrado.");
+        if (usuario.correo_verificado) return { message: "El correo ya fue verificado." };
+
+        if (!usuario.codigo_verificacion || usuario.codigo_verificacion !== codigo) {
+            throw new Error("Código incorrecto.");
+        }
+        if (new Date() > new Date(usuario.codigo_verificacion_expira)) {
+            throw new Error("El código ha expirado. Solicita uno nuevo.");
+        }
+
+        await prisma.usuario.update({
+            where: { correo },
+            data: {
+                correo_verificado: true,
+                codigo_verificacion: null,
+                codigo_verificacion_expira: null,
+            }
+        });
+
+        const usuarioActualizado = await UsuarioService.obtenerPorId(usuario.id_usuario);
+        const token = generarToken(usuario);
+
+        // El correo de bienvenida se enviará en el Paso 3 al verificar la identidad
+
+        return {
+            message: "Correo verificado exitosamente.",
+            usuario: limpiarUsuario(usuarioActualizado),
+            token,
+        };
+    },
+
+    async reenviarCodigo({ correo }) {
+        const usuario = await prisma.usuario.findUnique({ where: { correo } });
+        if (!usuario) throw new Error("Usuario no encontrado.");
+        if (usuario.correo_verificado) throw new Error("El correo ya fue verificado.");
+
+        const nuevoCodigo = generarCodigo6Digitos();
+        const nuevaExpiracion = new Date(Date.now() + 15 * 60 * 1000);
+
+        await prisma.usuario.update({
+            where: { correo },
+            data: { codigo_verificacion: nuevoCodigo, codigo_verificacion_expira: nuevaExpiracion }
+        });
+
+        await EmailService.enviarCorreoVerificacion(usuario.correo, usuario.nombre, nuevoCodigo);
+        return { message: "Código reenviado exitosamente." };
     },
 };
 

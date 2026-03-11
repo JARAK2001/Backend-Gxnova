@@ -15,6 +15,9 @@ CREATE TABLE `Usuario` (
     `fecha_verificacion` DATETIME(3) NULL,
     `terminos_aceptados` BOOLEAN NOT NULL DEFAULT true,
     `fecha_aceptacion_terminos` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `correo_verificado` BOOLEAN NOT NULL DEFAULT false,
+    `codigo_verificacion` VARCHAR(6) NULL,
+    `codigo_verificacion_expira` DATETIME(3) NULL,
 
     UNIQUE INDEX `Usuario_correo_key`(`correo`),
     PRIMARY KEY (`id_usuario`)

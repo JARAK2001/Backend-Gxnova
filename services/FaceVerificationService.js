@@ -9,8 +9,11 @@ const FaceVerificationService = {
      */
     async compararRostros(urlImagen1, urlImagen2) {
         try {
-            // Validar que exista la URL del servicio
-            const SERVICE_URL = process.env.FACIAL_RECOGNITION_SERVICE_URL || "http://localhost:8000";
+            // Validar que exista la URL del servicio y quitar barras finales
+            let SERVICE_URL = process.env.FACIAL_RECOGNITION_SERVICE_URL || "http://localhost:8000";
+            if (SERVICE_URL.endsWith('/')) {
+                SERVICE_URL = SERVICE_URL.slice(0, -1);
+            }
 
             // Llamada al microservicio local
             const response = await axios.post(
@@ -41,11 +44,11 @@ const FaceVerificationService = {
             // Manejo de errores específicos del microservicio
             if (error.response?.data) {
                 console.error("[FaceRecognition] Error del servicio:", error.response.data);
-                throw new Error(error.response.data.detail || "Error al procesar la imagen.");
+                throw new Error(`ErrorFacial: ${error.response.data.detail || "Error al procesar la imagen."}`);
             }
 
             console.error("[FaceRecognition] Error inesperado:", error.message);
-            throw new Error("Error al verificar rostros con el microservicio local");
+            throw new Error("ErrorFacial: Error de comunicación con el microservicio facial en la comparación.");
         }
     },
 
@@ -57,7 +60,10 @@ const FaceVerificationService = {
      */
     async buscarDuplicado(targetUrl, candidateUrls) {
         try {
-            const SERVICE_URL = process.env.FACIAL_RECOGNITION_SERVICE_URL || "http://localhost:8000";
+            let SERVICE_URL = process.env.FACIAL_RECOGNITION_SERVICE_URL || "http://localhost:8000";
+            if (SERVICE_URL.endsWith('/')) {
+                SERVICE_URL = SERVICE_URL.slice(0, -1);
+            }
 
             if (!candidateUrls || candidateUrls.length === 0) return false;
 
@@ -78,7 +84,7 @@ const FaceVerificationService = {
             return data.matchFound;
         } catch (error) {
             console.error("[FaceRecognition] Error al buscar duplicados:", error.message);
-            throw new Error("Error al buscar rostros duplicados con el microservicio local");
+            throw new Error("ErrorFacial: Error de comunicación con el microservicio facial en la búsqueda de duplicados.");
         }
     }
 };

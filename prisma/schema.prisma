@@ -76,6 +76,11 @@ model Usuario {
   terminos_aceptados        Boolean       @default(true) // Todos los registros a partir de la DB Migration requerirán esto en true
   fecha_aceptacion_terminos DateTime      @default(now())
 
+  // Verificación de correo
+  correo_verificado          Boolean   @default(false)
+  codigo_verificacion        String?   @db.VarChar(6)
+  codigo_verificacion_expira DateTime?
+
   // Roles
   rolesAsignados UsuarioEnRol[]
 

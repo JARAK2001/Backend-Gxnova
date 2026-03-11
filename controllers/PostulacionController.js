@@ -42,6 +42,15 @@ const PostulacionController = {
         }
 
         try {
+            // Verificar si el usuario ya se postuló a este trabajo
+            const postulacionesPrevias = await PostulacionService.obtenerPostulaciones({
+                id_trabajo: parseInt(id_trabajo),
+                id_trabajador: req.usuario.id_usuario
+            });
+
+            if (postulacionesPrevias && postulacionesPrevias.length > 0) {
+                return res.status(400).json({ error: 'Ya te has postulado a este trabajo.' });
+            }
             const nuevaPostulacion = await PostulacionService.crearPostulacion({
                 id_trabajo: parseInt(id_trabajo),
                 id_trabajador: req.usuario.id_usuario,

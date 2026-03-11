@@ -3,56 +3,27 @@ const AuthServices = require("../services/AuthServices");
 const AuthController = {
 
     async register(req, res) {
-        // Desestructuración de datos
         const { nombre, apellido, correo, password, telefono, rolNombre, terminosAceptados } = req.body;
 
         try {
-            // Validación mínima del Controller
             if (!correo || !password) {
                 return res.status(400).json({ message: 'El correo y la contraseña son obligatorios.' });
             }
-
             if (!terminosAceptados || terminosAceptados === 'false') {
                 return res.status(400).json({ message: 'Debes aceptar los Términos y Condiciones y la Política de Privacidad.' });
             }
 
-            // Verificar si vienen archivos
-            let foto_cedula_path = null;
-            let foto_perfil_path = null;
-            let selfie_path = null;
-
-            if (req.files) {
-                if (req.files.foto_cedula && req.files.foto_cedula[0]) {
-                    // Usar la URL de Cloudinary
-                    foto_cedula_path = req.files.foto_cedula[0].path;
-                }
-                if (req.files.foto_perfil && req.files.foto_perfil[0]) {
-                    foto_perfil_path = req.files.foto_perfil[0].path;
-                }
-                if (req.files.selfie && req.files.selfie[0]) {
-                    selfie_path = req.files.selfie[0].path;
-                }
-            }
-
-            // Llamada al Servicio
             const result = await AuthServices.register({
-                nombre,
-                apellido,
-                correo,
-                password,
-                telefono,
-                rolNombre,
-                terminosAceptados: terminosAceptados === 'true' || terminosAceptados === true,
-                foto_cedula_path,
-                foto_perfil_path,
-                selfie_path
+                nombre, apellido, correo, password, telefono, rolNombre,
+                terminosAceptados: terminosAceptados === 'true' || terminosAceptados === true
             });
 
             // Respuesta de Éxito HTTP 201 Created
             return res.status(201).json({
-                message: "Usuario registrado exitosamente.",
-                usuario: result.usuario, // Ya limpio
-                token: result.token
+                message: result.message,
+                usuario: result.usuario,
+                token: result.token,
+                requiereVerificacion: result.requiereVerificacion  // ← necesario para el Paso 2
             });
 
         } catch (error) {
@@ -76,12 +47,16 @@ const AuthController = {
                 return res.status(400).json({ message: "Este rostro ya está registrado. No se permite duplicar identidades." });
             }
 
+            if (error.message.includes("ErrorFacial:")) {
+                return res.status(400).json({ message: error.message.replace("ErrorFacial: ", "") });
+            }
+
             if (error.message.includes("obligatorias")) {
                 return res.status(400).json({ message: error.message });
             }
 
             console.error("Error en AuthController.register:", error.message);
-            return res.status(500).json({ message: 'Error interno del servidor.' });
+            return res.status(500).json({ message: `Error interno del servidor. Detalle: ${error.message}` });
         }
     },
 
@@ -117,8 +92,64 @@ const AuthController = {
 
     async logout(req, res) {
         await AuthServices.logout();
-
         return res.status(200).json({ message: "Sesión cerrada. El token JWT debe ser eliminado por el cliente." });
+    },
+
+    async verificarIdentidad(req, res) {
+        const { correo } = req.body;
+        if (!correo) {
+            return res.status(400).json({ message: 'El correo es obligatorio.' });
+        }
+
+        let foto_cedula_path = null;
+        let foto_perfil_path = null;
+        let selfie_path = null;
+
+        if (req.files) {
+            if (req.files.foto_cedula?.[0]) foto_cedula_path = req.files.foto_cedula[0].path;
+            if (req.files.foto_perfil?.[0]) foto_perfil_path = req.files.foto_perfil[0].path;
+            if (req.files.selfie?.[0]) selfie_path = req.files.selfie[0].path;
+        }
+
+        try {
+            const result = await AuthServices.verificarIdentidadUsuario({
+                correo, foto_cedula_path, foto_perfil_path, selfie_path
+            });
+            return res.status(200).json(result);
+        } catch (error) {
+            if (error.message.includes('no coincide') || error.message.includes('duplicado') ||
+                error.message.includes('ya está registrado') || error.message.includes('ErrorFacial')) {
+                return res.status(400).json({ message: error.message.replace('ErrorFacial: ', '') });
+            }
+            console.error('[AuthController] Error verificarIdentidad:', error.message);
+            return res.status(500).json({ message: error.message });
+        }
+    },
+
+    async verificarCorreo(req, res) {
+        const { correo, codigo } = req.body;
+        if (!correo || !codigo) {
+            return res.status(400).json({ message: 'El correo y el código son obligatorios.' });
+        }
+        try {
+            const result = await AuthServices.verificarCodigo({ correo, codigo });
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(400).json({ message: error.message });
+        }
+    },
+
+    async reenviarCodigo(req, res) {
+        const { correo } = req.body;
+        if (!correo) {
+            return res.status(400).json({ message: 'El correo es obligatorio.' });
+        }
+        try {
+            const result = await AuthServices.reenviarCodigo({ correo });
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(400).json({ message: error.message });
+        }
     },
 };
 

@@ -145,6 +145,7 @@ async function main() {
                 fecha_verificacion: u.verificado ? new Date() : null,
                 terminos_aceptados: true,
                 fecha_aceptacion_terminos: new Date(),
+                correo_verificado: true,  // Todos los usuarios seed están pre-verificados
                 // No incluimos foto_cedula ni foto_rostro para usuarios de seed
                 // Estos son usuarios de prueba pre-verificados
             }
@@ -229,41 +230,53 @@ async function main() {
                 {
                     id_empleador: carlos.id_usuario,
                     id_categoria: categorias[0].id_categoria, // Plomería
-                    titulo: "Reparar grifo cocina",
-                    descripcion: "El grifo gotea constantemente.",
+                    titulo: "Reparar tubería en la cocina",
+                    descripcion: "Se reventó el tubo principal debajo del lavaplatos.",
                     tipo_pago: "dinero",
-                    monto_pago: 60.00,
-                    ubicacion: "Centro, Calle 10",
-                    latitud: 4.60,
-                    longitud: -74.08,
+                    monto_pago: 80000.00,
+                    ubicacion: "Barrio La Esmeralda, Popayán",
+                    latitud: 2.450,
+                    longitud: -76.595,
                     estado: "publicado"
                 },
                 {
                     id_empleador: carlos.id_usuario,
                     id_categoria: categorias[3].id_categoria, // Jardinería
-                    titulo: "Cortar pasto patio trasero",
-                    descripcion: "Necesito alguien con cortadora de pasto.",
+                    titulo: "Poda de jardín exterior",
+                    descripcion: "Necesito cortar el pasto y podar dos arbustos pequeños.",
                     tipo_pago: "dinero",
-                    monto_pago: 40.00,
-                    ubicacion: "Norte, Av 19",
-                    latitud: 4.70,
-                    longitud: -74.05,
+                    monto_pago: 50000.00,
+                    ubicacion: "Campanario, Popayán",
+                    latitud: 2.460,
+                    longitud: -76.585,
                     estado: "publicado"
                 },
                 {
                     id_empleador: carlos.id_usuario,
                     id_categoria: categorias[6].id_categoria, // Carpintería
-                    titulo: "Hacer un escritorio a medida",
-                    descripcion: "Necesito un escritorio de madera de 120x60cm.",
+                    titulo: "Instalación de repisas",
+                    descripcion: "Necesito instalar 3 repisas de madera en la sala.",
                     tipo_pago: "dinero",
-                    monto_pago: 150.00,
-                    ubicacion: "Occidente, Calle 80",
-                    latitud: 4.69,
-                    longitud: -74.12,
+                    monto_pago: 60000.00,
+                    ubicacion: "Barrio Bolívar, Popayán",
+                    latitud: 2.445,
+                    longitud: -76.600,
+                    estado: "publicado"
+                },
+                {
+                    id_empleador: carlos.id_usuario,
+                    id_categoria: categorias[1].id_categoria, // Electricidad
+                    titulo: "Cambio de cableado eléctrico viejo",
+                    descripcion: "El pasillo tiene un corto circuito, hay que revisar el cableado.",
+                    tipo_pago: "dinero",
+                    monto_pago: 120000.00,
+                    ubicacion: "Centro Histórico, Popayán",
+                    latitud: 2.441,
+                    longitud: -76.606,
                     estado: "publicado"
                 }
             ],
-            skipDuplicates: true // Nota: createMany no soporta skipDuplicates en todas las DBs, pero en MySQL sí para inserts simples sin relaciones anidadas
+            skipDuplicates: true
         });
     }
 
@@ -273,13 +286,37 @@ async function main() {
                 {
                     id_empleador: maria.id_usuario,
                     id_categoria: categorias[7].id_categoria, // Mecánica
-                    titulo: "Arreglar motor de carro",
-                    descripcion: "Mi coche no arranca, parece problema del motor o batería.",
+                    titulo: "Cambio de aceite y frenos a moto",
+                    descripcion: "Necesito cambio de aceite y pastillas de freno para una Yamaha FZ.",
                     tipo_pago: "dinero",
-                    monto_pago: 120.00,
-                    ubicacion: "Sur, Av Boyaca",
-                    latitud: 4.58,
-                    longitud: -74.15,
+                    monto_pago: 45000.00,
+                    ubicacion: "Tulcán, Popayán",
+                    latitud: 2.445,
+                    longitud: -76.590,
+                    estado: "publicado"
+                },
+                {
+                    id_empleador: maria.id_usuario,
+                    id_categoria: categorias[2].id_categoria, // Limpieza
+                    titulo: "Limpieza profunda de apartamento",
+                    descripcion: "Aseo general de un apartamento de 2 habitaciones.",
+                    tipo_pago: "dinero",
+                    monto_pago: 70000.00,
+                    ubicacion: "Barrio Pomona, Popayán",
+                    latitud: 2.435,
+                    longitud: -76.598,
+                    estado: "publicado"
+                },
+                {
+                    id_empleador: maria.id_usuario,
+                    id_categoria: categorias[8].id_categoria, // Albañilería
+                    titulo: "Resanar pared húmeda",
+                    descripcion: "Hay humedad en un cuarto y necesito que raspen, estuquen y pinten.",
+                    tipo_pago: "dinero",
+                    monto_pago: 150000.00,
+                    ubicacion: "Sector Catay, Popayán",
+                    latitud: 2.455,
+                    longitud: -76.580,
                     estado: "publicado"
                 }
             ],
@@ -293,13 +330,25 @@ async function main() {
                 {
                     id_empleador: pedro.id_usuario,
                     id_categoria: categorias[5].id_categoria, // Pintura
-                    titulo: "Pintar sala y comedor",
-                    descripcion: "Busco pintor para sala y comedor, pintura blanca mate.",
+                    titulo: "Pintar fachada de casa de 1 piso",
+                    descripcion: "Pintura blanca para la fachada exterior.",
                     tipo_pago: "dinero",
-                    monto_pago: 200.00,
-                    ubicacion: "Centro, Carrera 7",
-                    latitud: 4.62,
-                    longitud: -74.06,
+                    monto_pago: 200000.00,
+                    ubicacion: "Barrio Cadillal, Popayán",
+                    latitud: 2.448,
+                    longitud: -76.610,
+                    estado: "publicado"
+                },
+                {
+                    id_empleador: pedro.id_usuario,
+                    id_categoria: categorias[4].id_categoria, // Mudanzas
+                    titulo: "Trasteo pequeño de muebles",
+                    descripcion: "Mover una cama, una nevera y dos escritorios al barrio vecino.",
+                    tipo_pago: "dinero",
+                    monto_pago: 90000.00,
+                    ubicacion: "Barrio Modelo, Popayán",
+                    latitud: 2.452,
+                    longitud: -76.602,
                     estado: "publicado"
                 }
             ],
@@ -313,13 +362,37 @@ async function main() {
                 {
                     id_empleador: laura.id_usuario,
                     id_categoria: categorias[9].id_categoria, // Clases Particulares
-                    titulo: "Profesor de matemáticas urgentes",
-                    descripcion: "Necesito tutoría de álgebra para mi hijo de secundaria.",
+                    titulo: "Refuerzo escolar en matemáticas grado 9",
+                    descripcion: "Dos horas de clase para mi hijo que tiene examen de álgebra.",
                     tipo_pago: "dinero",
-                    monto_pago: 30.00,
-                    ubicacion: "Norte, Calle 116",
-                    latitud: 4.70,
-                    longitud: -74.03,
+                    monto_pago: 60000.00,
+                    ubicacion: "La Venta, Popayán",
+                    latitud: 2.430,
+                    longitud: -76.610,
+                    estado: "publicado"
+                },
+                {
+                    id_empleador: laura.id_usuario,
+                    id_categoria: categorias[0].id_categoria, // Plomería
+                    titulo: "Instalar lavadora nueva",
+                    descripcion: "Conectar las mangueras de agua y desagüe de la lavadora.",
+                    tipo_pago: "dinero",
+                    monto_pago: 40000.00,
+                    ubicacion: "Barrio Santa Inés, Popayán",
+                    latitud: 2.458,
+                    longitud: -76.592,
+                    estado: "publicado"
+                },
+                {
+                    id_empleador: laura.id_usuario,
+                    id_categoria: categorias[2].id_categoria, // Limpieza
+                    titulo: "Limpieza después de fiesta (domingo)",
+                    descripcion: "Aseo en el salón social de mi conjunto residencial.",
+                    tipo_pago: "dinero",
+                    monto_pago: 80000.00,
+                    ubicacion: "Sector Los Hoyos, Popayán",
+                    latitud: 2.443,
+                    longitud: -76.589,
                     estado: "publicado"
                 }
             ],

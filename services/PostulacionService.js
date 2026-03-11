@@ -27,6 +27,11 @@ const PostulacionService = {
                         id_trabajo: true,
                         titulo: true,
                         estado: true,
+                        latitud: true,
+                        longitud: true,
+                        ubicacion: true,
+                        fecha_estimada: true,
+                        monto_pago: true,
                         empleador: {
                             select: {
                                 id_usuario: true,

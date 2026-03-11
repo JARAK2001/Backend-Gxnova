@@ -31,6 +31,36 @@ io.on('connection', (socket) => {
         console.log(`Usuario se unió a la sala de chat: chat_${chatId}`);
     });
 
+    // Escuchar actualizaciones de ubicación del trabajador
+    socket.on('update_location', (data) => {
+        // data: { id_empleador, latitud_trabajador, longitud_trabajador, latitud_trabajo, longitud_trabajo }
+        const { id_empleador, latitud_trabajador, longitud_trabajador, latitud_trabajo, longitud_trabajo } = data;
+        
+        if (!latitud_trabajador || !longitud_trabajador || !latitud_trabajo || !longitud_trabajo) return;
+
+        // Fórmula de Haversine para calcular distancia
+        const R = 6371e3; // Radio de la Tierra en metros
+        const phi1 = latitud_trabajador * Math.PI / 180;
+        const phi2 = latitud_trabajo * Math.PI / 180;
+        const deltaPhi = (latitud_trabajo - latitud_trabajador) * Math.PI / 180;
+        const deltaLambda = (longitud_trabajo - longitud_trabajador) * Math.PI / 180;
+
+        const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                  Math.cos(phi1) * Math.cos(phi2) *
+                  Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        const distancia = R * c; // en metros
+
+        if (distancia <= 500) {
+            // Emitimos la alarma a la sala personal del empleador
+            io.to(`user_${id_empleador}`).emit('worker_arriving', {
+                distancia: Math.round(distancia),
+                mensaje: "Tu experto está llegando, ten todo listo"
+            });
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('Usuario desconectado:', socket.id);
     });
@@ -66,6 +96,7 @@ const NotificacionRouter = require('./routes/NotificacionRouter');
 const HabilidadRouter = require('./routes/HabilidadRouter');
 const AdminRouter = require('./routes/AdminRouter');
 const MensajeRouter = require('./routes/MensajeRouter');
+const StatsRouter = require('./routes/statsRoutes');
 
 app.use('/api/usuarios', UsuarioRouter);
 app.use('/api/auth', AuthRouter);
@@ -81,6 +112,7 @@ app.use('/api/historial', HistorialRouter);
 app.use('/api/notificaciones', NotificacionRouter);
 app.use('/api/habilidades', HabilidadRouter);
 app.use('/api/chat', MensajeRouter);
+app.use('/api/stats', StatsRouter);
 
 
 // Ruta de prueba solo para ver si funcionaba
