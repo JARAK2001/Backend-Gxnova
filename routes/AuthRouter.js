@@ -13,7 +13,6 @@ router.post("/reenviar-codigo", AuthController.reenviarCodigo);
 // Paso 3: Verificación de identidad con imágenes (Docker facial recognition)
 router.post("/verificar-identidad",
     upload.fields([
-        { name: 'foto_cedula', maxCount: 1 },
         { name: 'foto_perfil', maxCount: 1 },
         { name: 'selfie', maxCount: 1 }
     ]),
@@ -22,5 +21,12 @@ router.post("/verificar-identidad",
 
 router.post("/login", AuthController.login);
 router.post("/logout", AuthController.logout);
+
+// Recuperación de Contraseña
+router.post("/recuperar-password", AuthController.recuperarPassword);
+router.post("/reset-password", AuthController.resetPassword);
+
+// Login Facial
+router.post("/login-facial", upload.single('selfie'), AuthController.loginFacial);
 
 module.exports = router;

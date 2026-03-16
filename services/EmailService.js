@@ -197,6 +197,43 @@ class EmailService {
             return false;
         }
     }
+
+    async enviarCorreoRecuperacionPassword(correoDestino, nombreUsuario, codigo) {
+        try {
+            const result = await this._sendEmail({
+                toEmail: correoDestino,
+                toName: nombreUsuario,
+                subject: `${codigo} es tu código de recuperación de contraseña en Gxnova`,
+                htmlContent: `
+                    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                        <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 36px 30px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: 1px;">Gxnova</h1>
+                            <p style="color: #cbd5e1; margin: 8px 0 0 0; font-size: 14px; font-weight: 500;">Recuperación de Contraseña</p>
+                        </div>
+                        <div style="padding: 36px 40px; background-color: #ffffff;">
+                            <h2 style="color: #0f172a; font-size: 20px; font-weight: 700; margin-top: 0;">Hola, ${nombreUsuario}</h2>
+                            <p style="color: #475569; font-size: 15px; line-height: 1.6;">
+                                Recibimos una solicitud para restablecer tu contraseña. Usa el siguiente código para crear una nueva:
+                            </p>
+                            <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+                                <p style="color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; margin: 0 0 8px 0;">Tu código de seguridad</p>
+                                <span style="font-size: 40px; font-weight: 900; letter-spacing: 8px; color: #0f172a; font-family: monospace;">${codigo}</span>
+                                <p style="color: #ef4444; font-size: 12px; margin: 12px 0 0 0;">Este código expira en 15 minutos</p>
+                            </div>
+                            <p style="color: #64748b; font-size: 13px; margin: 0;">
+                                Si no solicitaste un cambio de contraseña, ignora este correo. Tu cuenta sigue segura.
+                            </p>
+                        </div>
+                    </div>
+                `
+            });
+            console.log(`[EmailService] Correo de recuperación enviado a: ${correoDestino}`);
+            return true;
+        } catch (error) {
+            console.error('[EmailService] Error al enviar correo de recuperación:', error.message);
+            return false;
+        }
+    }
 }
 
 module.exports = new EmailService();

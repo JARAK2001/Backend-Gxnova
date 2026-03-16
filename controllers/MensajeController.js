@@ -76,21 +76,27 @@ exports.enviarMensaje = async (req, res) => {
         // o los id_trabajador/id_empleador si es el primer mensaje.
 
         const { id_conversacion, id_receptor, id_trabajo, contenido } = req.body;
-        const id_emisor = req.usuario.id_usuario;
+        const id_emisor = Number(req.usuario.id_usuario);
+        const imagen_url = req.file ? req.file.path : null;
+
+        if (!contenido && !imagen_url) {
+            return res.status(400).json({ error: 'El mensaje debe contener texto o una imagen.' });
+        }
 
         let convId = id_conversacion;
 
         // Si no hay id_conversacion, buscamos o creamos una basada en los participantes y el trabajo
         if (!convId && id_receptor) {
             // Buscamos si ya existe una conversación para este trabajo entre estos dos usuarios
+            let id_receptor_num = Number(id_receptor);
             let conversacionRef = await prisma.conversacion.findFirst({
                 where: {
                     AND: [
                         { id_trabajo: id_trabajo ? Number(id_trabajo) : null },
                         {
                             OR: [
-                                { id_trabajador: id_emisor, id_empleador: id_receptor },
-                                { id_trabajador: id_receptor, id_empleador: id_emisor }
+                                { id_trabajador: id_emisor, id_empleador: id_receptor_num },
+                                { id_trabajador: id_receptor_num, id_empleador: id_emisor }
                             ]
                         }
                     ]
@@ -100,7 +106,7 @@ exports.enviarMensaje = async (req, res) => {
             if (!conversacionRef) {
                 // Si no existe, la creamos identificando roles
                 let id_trabajador_final = id_emisor;
-                let id_empleador_final = id_receptor;
+                let id_empleador_final = id_receptor_num;
 
                 if (id_trabajo) {
                     const trabajo = await prisma.trabajo.findUnique({
@@ -110,7 +116,7 @@ exports.enviarMensaje = async (req, res) => {
                     if (trabajo) {
                         if (id_emisor === trabajo.id_empleador) {
                             id_empleador_final = id_emisor;
-                            id_trabajador_final = id_receptor;
+                            id_trabajador_final = id_receptor_num;
                         } else {
                             id_empleador_final = trabajo.id_empleador;
                             id_trabajador_final = id_emisor;
@@ -138,7 +144,8 @@ exports.enviarMensaje = async (req, res) => {
             data: {
                 id_conversacion: Number(convId),
                 id_emisor,
-                contenido
+                contenido: contenido || null,
+                imagen_url
             }
         });
 

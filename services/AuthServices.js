@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const UsuarioService = require("./UsuarioService");
 const VerificationService = require("./VerificationService");
+const FaceVerificationService = require("./FaceVerificationService");
 const EmailService = require("./EmailService");
 
 // Validación de variable de entorno
@@ -33,9 +34,18 @@ const AuthServices = {
     async register(data) {
         const { nombre, apellido, correo, password, telefono, rolNombre, terminosAceptados, foto_cedula_path, foto_perfil_path, selfie_path } = data;
 
-        const usuarioExistente = await UsuarioService.obtenerPorCorreo(correo);
+        const usuarioExistente = await prisma.usuario.findUnique({ where: { correo } });
         if (usuarioExistente) {
-            throw new Error("El correo electrónico ya está registrado.");
+            // Si el usuario existe pero no completó la verificación de identidad (Paso 3)
+            // Procedemos a eliminarlo para que pueda volver a intentar el registro desde cero.
+            if (!usuarioExistente.verificado) {
+                console.log(`[AuthServices] Eliminando cuenta incompleta para re-registro: ${correo}`);
+                // Eliminar dependencias primero
+                await prisma.usuarioEnRol.deleteMany({ where: { id_usuario: usuarioExistente.id_usuario } });
+                await prisma.usuario.delete({ where: { id_usuario: usuarioExistente.id_usuario } });
+            } else {
+                throw new Error("El correo electrónico ya está registrado.");
+            }
         }
 
         const passwordHash = await bcrypt.hash(password, 10);
@@ -116,26 +126,24 @@ const AuthServices = {
         };
     },
 
-    async verificarIdentidadUsuario({ correo, foto_cedula_path, foto_perfil_path, selfie_path }) {
+    async verificarIdentidadUsuario({ correo, foto_perfil_path, selfie_path }) {
         const usuario = await prisma.usuario.findUnique({ where: { correo } });
         if (!usuario) throw new Error("Usuario no encontrado.");
         if (!usuario.correo_verificado) throw new Error("Primero debes verificar tu correo.");
         if (usuario.verificado) throw new Error("Este usuario ya tiene su identidad verificada.");
 
-        if (!foto_cedula_path || !selfie_path) {
-            throw new Error("La foto de cédula y la selfie son obligatorias para verificar la identidad.");
+        if (!selfie_path) {
+            throw new Error("La selfie es obligatoria para verificar la identidad.");
         }
 
         // Ejecutar verificación con el microservicio Docker
         try {
             const esVerificado = await VerificationService.verificarIdentidad(
-                foto_cedula_path,
                 selfie_path
             );
 
             if (esVerificado) {
                 const datosActualizacion = {
-                    foto_cedula: foto_cedula_path,
                     foto_rostro: selfie_path,
                     verificado: true,
                     fecha_verificacion: new Date(),
@@ -205,6 +213,15 @@ const AuthServices = {
             };
         }
 
+        // Verificar si completó la verificación facial
+        if (!usuario.verificado) {
+            return {
+                requiereIdentidad: true,
+                correo: usuario.correo,
+                message: "Debes completar la verificación de identidad (selfie y cédula) para poder ingresar."
+            };
+        }
+
         // Cargar usuario completo con roles
         const usuarioConRol = await UsuarioService.obtenerPorId(usuario.id_usuario);
 
@@ -269,6 +286,82 @@ const AuthServices = {
         await EmailService.enviarCorreoVerificacion(usuario.correo, usuario.nombre, nuevoCodigo);
         return { message: "Código reenviado exitosamente." };
     },
+
+    async recuperarPassword(correo) {
+        const usuario = await prisma.usuario.findUnique({ where: { correo } });
+        if (!usuario) {
+            // Por seguridad, no decimos si existe o no, pero acá requerimos lanzar un error para el frontend?
+            // Mejor retornar éxito genérico para evitar user enumeration.
+            throw new Error("Si el correo existe, se ha enviado un código de recuperación.");
+        }
+
+        const codigo = generarCodigo6Digitos();
+        const expiracion = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+        await prisma.usuario.update({
+            where: { correo },
+            data: {
+                codigo_verificacion: codigo,
+                codigo_verificacion_expira: expiracion
+            }
+        });
+
+        await EmailService.enviarCorreoRecuperacionPassword(usuario.correo, usuario.nombre, codigo);
+        return { message: "Código de recuperación enviado." };
+    },
+
+    async resetPassword(correo, codigo, nuevaPassword) {
+        const usuario = await prisma.usuario.findUnique({ where: { correo } });
+        if (!usuario) throw new Error("Código o correo inválido.");
+
+        if (!usuario.codigo_verificacion || usuario.codigo_verificacion !== codigo) {
+            throw new Error("Código incorrecto.");
+        }
+
+        if (new Date() > new Date(usuario.codigo_verificacion_expira)) {
+            throw new Error("El código ha expirado. Solicita uno nuevo.");
+        }
+
+        const passwordHash = await bcrypt.hash(nuevaPassword, 10);
+
+        await prisma.usuario.update({
+            where: { correo },
+            data: {
+                password_hash: passwordHash,
+                codigo_verificacion: null,
+                codigo_verificacion_expira: null
+            }
+        });
+
+        return { message: "Contraseña actualizada exitosamente." };
+    },
+
+    async loginFacial({ correo, selfieUrl }) {
+        const usuario = await prisma.usuario.findUnique({ where: { correo } });
+        if (!usuario) {
+            throw new Error("Credenciales inválidas o rostro no coincide.");
+        }
+
+        if (!usuario.verificado || !usuario.foto_rostro) {
+            throw new Error("El usuario no tiene un rostro registrado o no está verificado.");
+        }
+
+        // Llamada al microservicio facial
+        const coincide = await FaceVerificationService.compararRostros(usuario.foto_rostro, selfieUrl);
+
+        if (!coincide) {
+            throw new Error("El rostro no coincide con el usuario registrado.");
+        }
+
+        // Si coincide, cargamos completo
+        const usuarioConRol = await UsuarioService.obtenerPorId(usuario.id_usuario);
+        const token = generarToken(usuario);
+
+        return {
+            usuario: limpiarUsuario(usuarioConRol),
+            token
+        };
+    }
 };
 
 module.exports = AuthServices;

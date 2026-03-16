@@ -97,6 +97,7 @@ const HabilidadRouter = require('./routes/HabilidadRouter');
 const AdminRouter = require('./routes/AdminRouter');
 const MensajeRouter = require('./routes/MensajeRouter');
 const StatsRouter = require('./routes/statsRoutes');
+const SubscriptionRoutes = require('./routes/SubscriptionRoutes.js');
 
 app.use('/api/usuarios', UsuarioRouter);
 app.use('/api/auth', AuthRouter);
@@ -113,6 +114,7 @@ app.use('/api/notificaciones', NotificacionRouter);
 app.use('/api/habilidades', HabilidadRouter);
 app.use('/api/chat', MensajeRouter);
 app.use('/api/stats', StatsRouter);
+app.use('/api/subscriptions', SubscriptionRoutes);
 
 
 // Ruta de prueba solo para ver si funcionaba

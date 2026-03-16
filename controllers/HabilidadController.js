@@ -34,23 +34,23 @@ const HabilidadController = {
 
             const SERVICE_URL = process.env.OBJECT_RECOGNITION_SERVICE_URL || "http://localhost:8080";
             let estado = 'aprobada';
+            const tipoDocumento = req.body.tipo_documento || 'certificado'; // 'certificado' o 'diploma'
 
             try {
-                // Hacer la petición al microservicio de Python
-                const validacionResponse = await axios.post(`${SERVICE_URL}/predict`, form, {
-                    headers: {
-                        ...form.getHeaders()
-                    }
+                // Hacer una ÚNICA petición basada en lo que el usuario seleccionó
+                console.log(`[HabilidadController] Intentando validación directa como ${tipoDocumento.toUpperCase()}...`);
+                
+                const validacionResponse = await axios.post(`${SERVICE_URL}/predict/${tipoDocumento}`, form, {
+                    headers: { ...form.getHeaders() }
                 });
 
                 const validacion = validacionResponse.data;
 
                 if (!validacion.is_valid) {
-                    // La IA rechazó el certificado → guardar como pendiente_revision
-                    console.log(`[HabilidadController] Certificado no validado por IA. Guardando como pendiente_revision.`);
+                    console.log(`[HabilidadController] Documento no validado por IA. Guardando como pendiente_revision.`);
                     estado = 'pendiente_revision';
                 } else {
-                    console.log(`[HabilidadController] Certificado verificado exitosamente por IA.`);
+                    console.log(`[HabilidadController] Documento verificado exitosamente por IA.`);
                 }
             } catch (ServiceError) {
                 // Si el servicio de IA no responde, guardar como pendiente_revision

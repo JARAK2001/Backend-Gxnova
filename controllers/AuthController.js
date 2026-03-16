@@ -101,19 +101,17 @@ const AuthController = {
             return res.status(400).json({ message: 'El correo es obligatorio.' });
         }
 
-        let foto_cedula_path = null;
         let foto_perfil_path = null;
         let selfie_path = null;
 
         if (req.files) {
-            if (req.files.foto_cedula?.[0]) foto_cedula_path = req.files.foto_cedula[0].path;
             if (req.files.foto_perfil?.[0]) foto_perfil_path = req.files.foto_perfil[0].path;
             if (req.files.selfie?.[0]) selfie_path = req.files.selfie[0].path;
         }
 
         try {
             const result = await AuthServices.verificarIdentidadUsuario({
-                correo, foto_cedula_path, foto_perfil_path, selfie_path
+                correo, foto_perfil_path, selfie_path
             });
             return res.status(200).json(result);
         } catch (error) {
@@ -151,6 +149,54 @@ const AuthController = {
             return res.status(400).json({ message: error.message });
         }
     },
+
+    async recuperarPassword(req, res) {
+        const { correo } = req.body;
+        if (!correo) return res.status(400).json({ message: 'El correo es obligatorio.' });
+        try {
+            const result = await AuthServices.recuperarPassword(correo);
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(400).json({ message: error.message });
+        }
+    },
+
+    async resetPassword(req, res) {
+        const { correo, codigo, nuevaPassword } = req.body;
+        if (!correo || !codigo || !nuevaPassword) {
+            return res.status(400).json({ message: 'Todos los campos son obligatorios.' });
+        }
+        try {
+            const result = await AuthServices.resetPassword(correo, codigo, nuevaPassword);
+            return res.status(200).json(result);
+        } catch (error) {
+            return res.status(400).json({ message: error.message });
+        }
+    },
+
+    async loginFacial(req, res) {
+        const { correo } = req.body;
+        if (!correo) return res.status(400).json({ message: 'El correo es obligatorio.' });
+        
+        let selfieUrl = null;
+        if (req.file && req.file.path) {
+            selfieUrl = req.file.path;
+        }
+
+        if (!selfieUrl) {
+            return res.status(400).json({ message: 'La selfie es obligatoria.' });
+        }
+
+        try {
+            const result = await AuthServices.loginFacial({ correo, selfieUrl });
+            return res.status(200).json(result);
+        } catch (error) {
+            console.error('[AuthController] Error loginFacial:', error.message);
+            // Si hay "ErrorFacial:" o similares lo limpiamos
+            let msg = error.message.replace("ErrorFacial: ", "");
+            return res.status(401).json({ message: msg });
+        }
+    }
 };
 
 module.exports = AuthController;

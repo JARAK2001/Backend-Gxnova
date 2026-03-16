@@ -18,6 +18,11 @@ enum EstadoUsuario {
   suspendido
 }
 
+enum NivelSuscripcion {
+  free
+  premium
+}
+
 enum TipoPago {
   dinero
   trueque
@@ -75,6 +80,11 @@ model Usuario {
   fecha_verificacion        DateTime?
   terminos_aceptados        Boolean       @default(true) // Todos los registros a partir de la DB Migration requerirán esto en true
   fecha_aceptacion_terminos DateTime      @default(now())
+
+  // Suscripción
+  nivel_suscripcion          NivelSuscripcion @default(free) // Nivel actual del usuario (freemium/premium)
+  suscripcion_inicio         DateTime?
+  suscripcion_fin            DateTime?
 
   // Verificación de correo
   correo_verificado          Boolean   @default(false)
@@ -345,7 +355,8 @@ model Mensaje {
   id_mensaje      Int      @id @default(autoincrement())
   id_conversacion Int
   id_emisor       Int
-  contenido       String   @db.Text
+  contenido       String?  @db.Text
+  imagen_url      String?  @db.VarChar(500)
   leido           Boolean  @default(false)
   enviado_en      DateTime @default(now())
 
