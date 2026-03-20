@@ -127,6 +127,20 @@ const AdminController = {
         }
     },
 
+    async crearPersonalUsuario(req, res) {
+        try {
+            const { nombre, apellido, correo, password, rol } = req.body;
+            if (!nombre || !apellido || !correo || !password) {
+                return res.status(400).json({ error: "Faltan campos obligatorios" });
+            }
+            const usuario = await AdminService.crearPersonalUsuario(req.body);
+            res.status(201).json({ message: "Personal creado correctamente", usuario });
+        } catch (error) {
+            console.error("Error creando personal:", error);
+            res.status(400).json({ error: error.message });
+        }
+    },
+
     async obtenerTodosLosTrabajos(req, res) {
         try {
             // Necesitamos un método para ver TODOS los trabajos (incluso borrados/cancelados si aplicara)

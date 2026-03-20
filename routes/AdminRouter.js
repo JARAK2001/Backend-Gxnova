@@ -13,6 +13,7 @@ router.get("/analytics", AdminController.obtenerAnaliticas);
 
 // Gestión de Usuarios
 router.get("/usuarios", AdminController.obtenerTodosLosUsuarios);
+router.post("/usuarios/personal", AdminController.crearPersonalUsuario);
 router.patch("/usuarios/:id/status", AdminController.cambiarEstadoUsuario);
 router.get("/verificaciones", AdminController.obtenerPendientesVerificacion);
 router.post("/verificaciones/:id", AdminController.verificarUsuario);
