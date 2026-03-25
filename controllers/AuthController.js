@@ -3,7 +3,7 @@ const AuthServices = require("../services/AuthServices");
 const AuthController = {
 
     async register(req, res) {
-        const { nombre, apellido, correo, password, telefono, rolNombre, terminosAceptados } = req.body;
+        const { nombre, apellido, correo, password, telefono, ciudad, rolNombre, terminosAceptados } = req.body;
 
         try {
             if (!correo || !password) {
@@ -14,7 +14,7 @@ const AuthController = {
             }
 
             const result = await AuthServices.register({
-                nombre, apellido, correo, password, telefono, rolNombre,
+                nombre, apellido, correo, password, telefono, ciudad, rolNombre,
                 terminosAceptados: terminosAceptados === 'true' || terminosAceptados === true
             });
 
@@ -175,9 +175,6 @@ const AuthController = {
     },
 
     async loginFacial(req, res) {
-        const { correo } = req.body;
-        if (!correo) return res.status(400).json({ message: 'El correo es obligatorio.' });
-        
         let selfieUrl = null;
         if (req.file && req.file.path) {
             selfieUrl = req.file.path;
@@ -188,7 +185,7 @@ const AuthController = {
         }
 
         try {
-            const result = await AuthServices.loginFacial({ correo, selfieUrl });
+            const result = await AuthServices.loginFacial({ selfieUrl });
             return res.status(200).json(result);
         } catch (error) {
             console.error('[AuthController] Error loginFacial:', error.message);

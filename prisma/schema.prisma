@@ -80,6 +80,7 @@ model Usuario {
   fecha_verificacion        DateTime?
   terminos_aceptados        Boolean       @default(true) // Todos los registros a partir de la DB Migration requerirán esto en true
   fecha_aceptacion_terminos DateTime      @default(now())
+  ciudad                    String?       @db.VarChar(100)
 
   // Suscripción
   nivel_suscripcion          NivelSuscripcion @default(free) // Nivel actual del usuario (freemium/premium)

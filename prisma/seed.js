@@ -401,6 +401,143 @@ async function main() {
     }
     console.log("Trabajos creados.");
 
+    // --- 7. Crear Trabajos Completados y Calificaciones ---
+    console.log("Añadiendo trabajos completados, postulaciones y reseñas...");
+    
+    // Trabajo 1: Carlos (Empleador) contrata a Ana (Trabajadora)
+    if (carlos && ana) {
+        const trabajoAna = await prisma.trabajo.create({
+            data: {
+                id_empleador: carlos.id_usuario,
+                id_categoria: categorias[0].id_categoria, // Plomería
+                titulo: "Fuga de urgencia reparada",
+                descripcion: "Se reventó una tubería maestra en el patio trasero y había que arreglarla rápido.",
+                tipo_pago: "dinero",
+                monto_pago: 90000.00,
+                ubicacion: "La Alborada, Popayán",
+                latitud: 2.455,
+                longitud: -76.580,
+                estado: "completado"
+            }
+        });
+
+        const postAna = await prisma.postulacion.create({
+            data: {
+                id_trabajo: trabajoAna.id_trabajo,
+                id_trabajador: ana.id_usuario,
+                mensaje: "Hola, tengo las herramientas listas y llego en 20 minutos.",
+                precio_propuesto: 90000.00,
+                estado: "aceptada"
+            }
+        });
+
+        const acuerdoAna = await prisma.acuerdo.create({
+            data: {
+                id_trabajo: trabajoAna.id_trabajo,
+                id_trabajador: ana.id_usuario,
+                tipo_pago: "dinero",
+                valor_acordado: 90000.00,
+                tiempo_estimado: "1 día",
+                aceptado_empleador: true,
+                aceptado_trabajador: true
+            }
+        });
+
+        await prisma.postulacion.update({
+            where: { id_postulacion: postAna.id_postulacion },
+            data: { id_acuerdo: acuerdoAna.id_acuerdo }
+        });
+
+        // Carlos califica a Ana (5/5)
+        await prisma.calificacion.create({
+            data: {
+                id_trabajo: trabajoAna.id_trabajo,
+                id_usuario_emisor: carlos.id_usuario,
+                id_usuario_receptor: ana.id_usuario,
+                puntuacion: 5,
+                comentario: "Excelente profesional. Llegó rapidísimo y el arreglo quedó impecable en cuestión de una hora. 100% recomendada."
+            }
+        });
+        
+        // Ana califica a Carlos (5/5)
+        await prisma.calificacion.create({
+            data: {
+                id_trabajo: trabajoAna.id_trabajo,
+                id_usuario_emisor: ana.id_usuario,
+                id_usuario_receptor: carlos.id_usuario,
+                puntuacion: 5,
+                comentario: "Trato muy amable, las indicaciones fueron claras y pagó a tiempo en la entrega. Un gusto servirle."
+            }
+        });
+    }
+
+    // Trabajo 2: Maria (Empleadora) contrata a Juan (Trabajador)
+    if (maria && juan) {
+        const trabajoJuan = await prisma.trabajo.create({
+            data: {
+                id_empleador: maria.id_usuario,
+                id_categoria: categorias[6].id_categoria, // Carpintería
+                titulo: "Mesa de centro a medida rústica",
+                descripcion: "Fabricación de mesa en madera sólida con acabado rústico para la sala principal.",
+                tipo_pago: "dinero",
+                monto_pago: 250000.00,
+                ubicacion: "Prados del Norte, Popayán",
+                latitud: 2.460,
+                longitud: -76.570,
+                estado: "completado"
+            }
+        });
+
+        const postJuan = await prisma.postulacion.create({
+            data: {
+                id_trabajo: trabajoJuan.id_trabajo,
+                id_trabajador: juan.id_usuario,
+                mensaje: "Dispongo de roble y cedro perfectos; puedo enviarle los bocetos digitales.",
+                precio_propuesto: 250000.00,
+                estado: "aceptada"
+            }
+        });
+
+        const acuerdoJuan = await prisma.acuerdo.create({
+            data: {
+                id_trabajo: trabajoJuan.id_trabajo,
+                id_trabajador: juan.id_usuario,
+                tipo_pago: "dinero",
+                valor_acordado: 250000.00,
+                tiempo_estimado: "1 semana",
+                aceptado_empleador: true,
+                aceptado_trabajador: true
+            }
+        });
+
+        await prisma.postulacion.update({
+            where: { id_postulacion: postJuan.id_postulacion },
+            data: { id_acuerdo: acuerdoJuan.id_acuerdo }
+        });
+
+        // Maria califica a Juan (4/5)
+        await prisma.calificacion.create({
+            data: {
+                id_trabajo: trabajoJuan.id_trabajo,
+                id_usuario_emisor: maria.id_usuario,
+                id_usuario_receptor: juan.id_usuario,
+                puntuacion: 4,
+                comentario: "El trabajo con la madera es precioso y los acabados se ven muy profesionales. Pongo 4 estrellas porque la mesa se entregó con un par de días de retraso a lo pactado."
+            }
+        });
+        
+        // Juan califica a Maria (5/5)
+        await prisma.calificacion.create({
+            data: {
+                id_trabajo: trabajoJuan.id_trabajo,
+                id_usuario_emisor: juan.id_usuario,
+                id_usuario_receptor: maria.id_usuario,
+                puntuacion: 5,
+                comentario: "Excelente clienta, muy abierta a sugerencias de diseño y respetuosa en todo el proceso. Fue un honor."
+            }
+        });
+    }
+
     console.log("Seeding completado con éxito.");
 }
 

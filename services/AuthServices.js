@@ -32,7 +32,7 @@ const limpiarUsuario = (usuario) => {
 
 const AuthServices = {
     async register(data) {
-        const { nombre, apellido, correo, password, telefono, rolNombre, terminosAceptados, foto_cedula_path, foto_perfil_path, selfie_path } = data;
+        const { nombre, apellido, correo, password, telefono, ciudad, rolNombre, terminosAceptados, foto_cedula_path, foto_perfil_path, selfie_path } = data;
 
         const usuarioExistente = await prisma.usuario.findUnique({ where: { correo } });
         if (usuarioExistente) {
@@ -63,6 +63,11 @@ const AuthServices = {
         // Si se proporciona telefono, agregarlo
         if (telefono) {
             datosUsuario.telefono = telefono;
+        }
+
+        // Si se proporciona ciudad, agregarla
+        if (ciudad) {
+            datosUsuario.ciudad = ciudad;
         }
 
         // Agregar foto_perfil si existe
@@ -336,25 +341,41 @@ const AuthServices = {
         return { message: "Contraseña actualizada exitosamente." };
     },
 
-    async loginFacial({ correo, selfieUrl }) {
-        const usuario = await prisma.usuario.findUnique({ where: { correo } });
-        if (!usuario) {
-            throw new Error("Credenciales inválidas o rostro no coincide.");
+    async loginFacial({ selfieUrl }) {
+        // Obtener todos los usuarios verificados que tienen foto_rostro registrada
+        const usuariosVerificados = await prisma.usuario.findMany({
+            where: {
+                verificado: true,
+                foto_rostro: { not: null }
+            },
+            select: {
+                id_usuario: true,
+                foto_rostro: true,
+            }
+        });
+
+        if (usuariosVerificados.length === 0) {
+            throw new Error("No hay usuarios con rostro registrado en el sistema.");
         }
 
-        if (!usuario.verificado || !usuario.foto_rostro) {
-            throw new Error("El usuario no tiene un rostro registrado o no está verificado.");
+        const candidateUrls = usuariosVerificados.map(u => u.foto_rostro);
+
+        // Llamar al microservicio para buscar si la selfie coincide con algún rostro registrado
+        const { matchFound, matchedUrl } = await FaceVerificationService.buscarDuplicado(selfieUrl, candidateUrls);
+
+        if (!matchFound || !matchedUrl) {
+            throw new Error("Rostro no registrado en el sistema. Inicia sesión con correo y contraseña, o regístrate si no tienes cuenta.");
         }
 
-        // Llamada al microservicio facial
-        const coincide = await FaceVerificationService.compararRostros(usuario.foto_rostro, selfieUrl);
-
-        if (!coincide) {
-            throw new Error("El rostro no coincide con el usuario registrado.");
+        // Encontrar el usuario cuya foto_rostro coincide con la URL devuelta
+        const usuarioEncontrado = usuariosVerificados.find(u => u.foto_rostro === matchedUrl);
+        if (!usuarioEncontrado) {
+            throw new Error("No se pudo identificar al usuario correspondiente.");
         }
 
-        // Si coincide, cargamos completo
-        const usuarioConRol = await UsuarioService.obtenerPorId(usuario.id_usuario);
+        // Cargar usuario completo con roles
+        const usuarioConRol = await UsuarioService.obtenerPorId(usuarioEncontrado.id_usuario);
+        const usuario = await prisma.usuario.findUnique({ where: { id_usuario: usuarioEncontrado.id_usuario } });
         const token = generarToken(usuario);
 
         return {

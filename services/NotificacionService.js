@@ -49,7 +49,7 @@ const NotificacionService = {
     },
 
     async crearNotificacion(data) {
-        return prisma.notificacion.create({
+        const nuevaNotificacion = await prisma.notificacion.create({
             data: {
                 id_usuario: data.id_usuario,
                 tipo: data.tipo,
@@ -67,6 +67,13 @@ const NotificacionService = {
                 }
             }
         });
+
+        // Emitir evento por WebSockets si el usuario está conectado en tiempo real
+        if (global.io) {
+            global.io.to(`user_${data.id_usuario}`).emit('nueva_notificacion', nuevaNotificacion);
+        }
+
+        return nuevaNotificacion;
     },
 
     async actualizarNotificacion(id, data) {

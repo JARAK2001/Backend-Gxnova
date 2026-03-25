@@ -47,12 +47,12 @@ const VerificationService = {
         console.log(`[VerificationService] Enviando ${urlRostrosRegistrados.length} rostros al microservicio para búsqueda rápida...`);
 
         // Llamar al endpoint /find-match del microservicio
-        const duplicadoEncontrado = await FaceVerificationService.buscarDuplicado(
+        const { matchFound } = await FaceVerificationService.buscarDuplicado(
             fotoRostroUrl,
             urlRostrosRegistrados
         );
 
-        if (duplicadoEncontrado) {
+        if (matchFound) {
             console.warn("[VerificationService] Se detectó un rostro duplicado en la base de datos.");
             throw new Error("Este rostro ya está registrado con otro usuario");
         }

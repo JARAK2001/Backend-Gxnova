@@ -17,6 +17,9 @@ const io = new Server(server, {
     }
 });
 
+// Guardar instancia global de io para usarla desde los servicios
+global.io = io;
+
 io.on('connection', (socket) => {
     console.log('Un usuario se ha conectado al WebSocket:', socket.id);
 

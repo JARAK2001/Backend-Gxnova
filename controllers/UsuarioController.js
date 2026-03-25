@@ -39,12 +39,13 @@ const UsuarioController = {
             }
 
             // Filtrar solo los campos permitidos y hashear la contraseña si existe
-            const { nombre, apellido, correo, password, telefono, foto_perfil } = req.body;
+            const { nombre, apellido, correo, password, telefono, foto_perfil, ciudad } = req.body;
 
             const datosAActualizar = {};
             if (nombre) datosAActualizar.nombre = nombre;
             if (apellido) datosAActualizar.apellido = apellido;
             if (telefono) datosAActualizar.telefono = telefono;
+            if (ciudad !== undefined) datosAActualizar.ciudad = ciudad;
 
             // Si hay archivo subido, usar esa ruta. Si no, usar la URL si se envió texto.
             if (req.file) {

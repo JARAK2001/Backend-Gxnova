@@ -56,7 +56,7 @@ const FaceVerificationService = {
      * Busca si un rostro ya existe en una lista de urls candidatas
      * @param {string} targetUrl URL del rostro a buscar
      * @param {string[]} candidateUrls URLs de rostros ya registrados
-     * @returns {Promise<boolean>} true si encontró un duplicado
+     * @returns {Promise<{ matchFound: boolean, matchedUrl: string|null }>}
      */
     async buscarDuplicado(targetUrl, candidateUrls) {
         try {
@@ -65,7 +65,7 @@ const FaceVerificationService = {
                 SERVICE_URL = SERVICE_URL.slice(0, -1);
             }
 
-            if (!candidateUrls || candidateUrls.length === 0) return false;
+            if (!candidateUrls || candidateUrls.length === 0) return { matchFound: false, matchedUrl: null };
 
             const response = await axios.post(
                 `${SERVICE_URL}/find-match`,
@@ -81,8 +81,16 @@ const FaceVerificationService = {
             const data = response.data;
             console.log(`[FaceRecognition] Búsqueda de duplicados - ¿Encontrado?: ${data.matchFound}`);
 
-            return data.matchFound;
+            return {
+                matchFound: data.matchFound,
+                matchedUrl: data.matchedUrl || null
+            };
         } catch (error) {
+            // Si el microservicio devolvió un error HTTP con detalle (ej: 400 sin rostro detectado)
+            if (error.response?.data?.detail) {
+                console.error("[FaceRecognition] Error del microservicio:", error.response.data.detail);
+                throw new Error(`ErrorFacial: ${error.response.data.detail}`);
+            }
             console.error("[FaceRecognition] Error al buscar duplicados:", error.message);
             throw new Error("ErrorFacial: Error de comunicación con el microservicio facial en la búsqueda de duplicados.");
         }

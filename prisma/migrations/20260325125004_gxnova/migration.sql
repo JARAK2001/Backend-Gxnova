@@ -15,6 +15,7 @@ CREATE TABLE `Usuario` (
     `fecha_verificacion` DATETIME(3) NULL,
     `terminos_aceptados` BOOLEAN NOT NULL DEFAULT true,
     `fecha_aceptacion_terminos` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `ciudad` VARCHAR(100) NULL,
     `nivel_suscripcion` ENUM('free', 'premium') NOT NULL DEFAULT 'free',
     `suscripcion_inicio` DATETIME(3) NULL,
     `suscripcion_fin` DATETIME(3) NULL,
