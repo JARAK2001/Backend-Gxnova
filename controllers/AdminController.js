@@ -83,16 +83,22 @@ const AdminController = {
 
     async obtenerAnaliticas(req, res) {
         try {
-            const [crecimiento, topUsuarios, distribucion] = await Promise.all([
+            const [crecimiento, topUsuarios, distribucion, ofertaDemanda, tendenciaTrabajos, recomendaciones] = await Promise.all([
                 AdminService.obtenerCrecimientoUsuarios(),
                 AdminService.obtenerTopUsuarios(),
-                AdminService.obtenerDistribucionCategorias()
+                AdminService.obtenerDistribucionCategorias(),
+                AdminService.obtenerOfertaVsDemanda(),
+                AdminService.obtenerTendenciasTrabajos(),
+                AdminService.obtenerRecomendacionesSistema()
             ]);
 
             res.json({
                 crecimiento,
                 topUsuarios,
-                distribucion
+                distribucion,
+                ofertaDemanda,
+                tendenciaTrabajos,
+                recomendaciones
             });
         } catch (error) {
             console.error("Error obteniendo analíticas:", error);

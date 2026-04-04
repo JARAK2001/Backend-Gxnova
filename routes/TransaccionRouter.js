@@ -4,6 +4,7 @@ const TransaccionController = require("../controllers/TransaccionController");
 
 const { verificarJWT } = require("../middleware/AuthMiddleware");
 const { rolMiddleware } = require("../middleware/RolMiddleware");
+const upload = require("../middleware/UploadMiddleware");
 
 // Obtener todas las transacciones (requiere autenticación)
 router.get("/",
@@ -61,6 +62,7 @@ router.patch("/:id/confirmar-intercambio",
 // Subir evidencia (URL de comprobante o foto del artículo)
 router.patch("/:id/subir-evidencia",
     verificarJWT,
+    upload.single("evidencia"),
     TransaccionController.subirEvidencia
 );
 

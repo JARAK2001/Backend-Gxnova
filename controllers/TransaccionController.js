@@ -160,19 +160,27 @@ const TransaccionController = {
     },
 
     // =========================================================
-    // EVIDENCIA — Subir URL de comprobante
+    // EVIDENCIA — Subir Archivo Físico o URL de comprobante
     // =========================================================
     async subirEvidencia(req, res) {
         const id = parseInt(req.params.id);
         const { evidencia_url } = req.body;
         const id_usuario = req.usuario.id_usuario;
 
-        if (!evidencia_url) {
-            return res.status(400).json({ error: 'El campo evidencia_url es obligatorio.' });
+        // Si el usuario subió una imagen, Cloudinary/Multer la pone en req.file.path
+        let finalUrl = null;
+        if (req.file && req.file.path) {
+            finalUrl = req.file.path;
+        } else if (evidencia_url) {
+            finalUrl = evidencia_url.trim();
+        }
+
+        if (!finalUrl) {
+            return res.status(400).json({ error: 'Debes proporcionar un archivo de imagen o una URL válida.' });
         }
 
         try {
-            const transaccion = await TransaccionService.subirEvidencia(id, evidencia_url, id_usuario);
+            const transaccion = await TransaccionService.subirEvidencia(id, finalUrl, id_usuario);
             return res.status(200).json({
                 message: 'Evidencia registrada correctamente.',
                 transaccion

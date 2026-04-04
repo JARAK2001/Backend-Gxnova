@@ -538,6 +538,130 @@ async function main() {
         });
     }
 
+    // --- 8. Distribuir Fechas de Trabajos (Para Analíticas) ---
+    console.log("Distribuyendo fechas al azar en los últimos 15 días para ver curvas en analíticas...");
+    const todosLosTrabajos = await prisma.trabajo.findMany();
+    for (let t of todosLosTrabajos) {
+        const fechaAleatoria = new Date();
+        // Restar entre 1 y 15 días al azar
+        fechaAleatoria.setDate(fechaAleatoria.getDate() - Math.floor(Math.random() * 15));
+        
+        await prisma.trabajo.update({
+            where: { id_trabajo: t.id_trabajo },
+            data: { fecha_creacion: fechaAleatoria }
+        });
+    }
+
+    // --- 9. Añadir Postulaciones Falsas para Generar Data Analítica ---
+    console.log("Generando competencia y postulaciones masivas para las gráficas...");
+    const trabajadoresLocales = [ana, luis, juan, sofia, diego].filter(Boolean);
+    const trabajosPublicados = await prisma.trabajo.findMany({ where: { estado: 'publicado' } });
+    
+    // Dejamos 3 trabajos sin postulaciones intencionalmente para disparar la alerta roja de "Fuga de Oportunidades"
+    const trabajosParaLlenar = trabajosPublicados.slice(3);
+
+    let totalPostulaciones = 0;
+    for (const t of trabajosParaLlenar) {
+        // En algunos trabajos asignaremos hasta 4 personas, para forzar "Alta Competencia"
+        const numPostulantes = Math.floor(Math.random() * 4) + 1; // Entre 1 y 4
+        const mixTrabajadores = [...trabajadoresLocales].sort(() => 0.5 - Math.random()).slice(0, numPostulantes);
+        
+        for (const worker of mixTrabajadores) {
+            // Fecha aleatoria para la postulación (después de la creación del trabajo)
+            const fPostulacion = new Date();
+            fPostulacion.setDate(fPostulacion.getDate() - Math.floor(Math.random() * 5));
+
+            await prisma.postulacion.create({
+                data: {
+                    id_trabajo: t.id_trabajo,
+                    id_trabajador: worker.id_usuario,
+                    mensaje: `Hola, estoy interesado. Mi tarifa es negociable.`,
+                    precio_propuesto: Number(t.monto_pago) * 0.9, // 10% menos que el presupuesto original
+                    fecha_postulacion: fPostulacion,
+                    estado: 'pendiente'
+                }
+            });
+            totalPostulaciones++;
+        }
+    }
+    console.log(`Se insertaron ${totalPostulaciones} postulaciones aleatorias en los trabajos disponibles.`);
+
+    // --- 10. GENERACIÓN MASIVA (Usuarios y Trabajos Extra) ---
+    console.log("Generando usuarios y trabajos masivos para poblar la plataforma...");
+    
+    const nombres = ["Andrés", "Valeria", "Camilo", "Isabella", "Sebastián", "Mateo", "Camila", "Julián", "Lucía", "Felipe"];
+    const apellidos = ["Ramírez", "Vargas", "Castro", "Díaz", "Rojas", "Gómez", "López", "Fernández", "Morales", "Ortiz"];
+    const descripciones = ["Necesito urgente este servicio", "Para el fin de semana", "Presupuesto negociable", "Trabajo rápido"];
+    
+    // Crear 20 Usuarios extra
+    const nuevosUsuarios = [];
+    for (let i = 0; i < 20; i++) {
+        const pRandom = new Date();
+        pRandom.setDate(pRandom.getDate() - Math.floor(Math.random() * 30)); // 30 días de antigüedad
+        
+        const esEmpleador = Math.random() > 0.5;
+        
+        const newU = await prisma.usuario.create({
+            data: {
+                nombre: nombres[Math.floor(Math.random() * nombres.length)],
+                apellido: apellidos[Math.floor(Math.random() * apellidos.length)],
+                correo: `user_test_${i}@gxnova.com`,
+                password_hash: password,
+                telefono: `300${Math.floor(1000000 + Math.random() * 9000000)}`,
+                estado: 'activo',
+                verificado: true,
+                terminos_aceptados: true,
+                correo_verificado: true,
+                fecha_registro: pRandom, // Fecha aleatoria al crear
+                rolesAsignados: {
+                    create: { id_rol: esEmpleador ? empleadorRol.id_rol : trabajadorRol.id_rol }
+                }
+            }
+        });
+        nuevosUsuarios.push({ ...newU, esEmpleador });
+    }
+    console.log("20 Usuarios adicionales creados.");
+
+    // Redistribuir fechas de registro a los usuarios originales para analíticas
+    const todosLosUsuarios = await prisma.usuario.findMany();
+    for (let u of todosLosUsuarios) {
+        if (!u.correo.includes("user_test")) { // Si es de los originales
+            const pRandom = new Date();
+            pRandom.setDate(pRandom.getDate() - Math.floor(Math.random() * 30));
+            await prisma.usuario.update({
+                where: { id_usuario: u.id_usuario },
+                data: { fecha_registro: pRandom }
+            });
+        }
+    }
+
+    // Crear 15 Trabajos extra usando los Empleadores masivos
+    const empleadoresNuevos = nuevosUsuarios.filter(u => u.esEmpleador);
+    for (let i = 0; i < 15; i++) {
+        const empRandom = empleadoresNuevos[Math.floor(Math.random() * empleadoresNuevos.length)];
+        const catRandom = categorias[Math.floor(Math.random() * categorias.length)];
+        
+        const fCreacion = new Date();
+        fCreacion.setDate(fCreacion.getDate() - Math.floor(Math.random() * 20));
+
+        await prisma.trabajo.create({
+            data: {
+                id_empleador: empRandom.id_usuario,
+                id_categoria: catRandom.id_categoria, // Plomería
+                titulo: `Servicio de ${catRandom.nombre} #${Math.floor(Math.random() * 1000)}`,
+                descripcion: descripciones[Math.floor(Math.random() * descripciones.length)],
+                tipo_pago: "dinero",
+                monto_pago: Math.floor(40 + Math.random() * 150) * 1000,
+                ubicacion: "Popayán",
+                latitud: 2.450 + (Math.random() * 0.05 - 0.025),
+                longitud: -76.595 + (Math.random() * 0.05 - 0.025),
+                estado: "publicado",
+                fecha_creacion: fCreacion
+            }
+        });
+    }
+    console.log("15 Trabajos adicionales creados.");
+
     console.log("Seeding completado con éxito.");
 }
 
